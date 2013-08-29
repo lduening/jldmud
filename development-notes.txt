@@ -1,0 +1,3 @@
+Java Bytecode Libraries:
+    http://www.csg.ci.i.u-tokyo.ac.jp/~chiba/javassist/
+    org.objectweb

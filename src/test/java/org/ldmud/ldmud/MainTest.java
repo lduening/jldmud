@@ -1,4 +1,4 @@
-package org.ldmud;
+package org.ldmud.ldmud;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
