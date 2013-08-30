@@ -1,4 +1,4 @@
-package org.ldmud.ldmud;
+package org.ldmud.jldmud;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -7,7 +7,7 @@ import junit.framework.TestSuite;
 /**
  * Unit test for simple App.
  */
-public class MainTest 
+public class MainTest
     extends TestCase
 {
     /**
