@@ -37,17 +37,16 @@ public class Version {
                 Properties properties = new Properties();
                 properties.load(in);
                 loaded = true;
-                ReleaseType = properties.getProperty("ldmud.version.release.type");
-                ReleaseLongType = properties.getProperty("ldmud.version.release.longtype");
-                ReleaseDate = properties.getProperty("ldmud.version.release.date");
-                Version = properties.getProperty("ldmud.version");
-                Major = properties.getProperty("ldmud.version.major");
-                Minor = properties.getProperty("ldmud.version.minor");
-                Micro = properties.getProperty("ldmud.version.micro");
+                ReleaseType = properties.getProperty("version.release.type");
+                ReleaseLongType = properties.getProperty("version.release.longtype");
+                ReleaseDate = properties.getProperty("version.release.date");
+                Version = properties.getProperty("version");
+                Major = properties.getProperty("version.major");
+                Minor = properties.getProperty("version.minor");
+                Micro = properties.getProperty("version.micro");
             }
         } catch (IOException ioe) {
-            System.err.println("Error: Problem loading ".concat(versionProperties).concat(":"));
-            ioe.printStackTrace();
+            System.err.println("Error: Problem loading ".concat(versionProperties).concat(":").concat(ioe.toString()));
         }
         if (!loaded) {
             throw new RuntimeException("Unable to load ".concat(versionProperties));

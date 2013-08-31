@@ -4,6 +4,9 @@
  */
 package org.ldmud.jldmud;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 
 import org.apache.commons.cli.CommandLine;
@@ -25,7 +28,7 @@ public final class Main {
 	private static final String DRIVER_NAME = "jLDMud";
 
 	/* Command line Arguments */
-	private static String propertiesFilename = "mud.properties";
+	private static String propertiesFilename = MudProperties.PROPERTIES_FILE;
 
     /**
      * Main method
@@ -34,7 +37,16 @@ public final class Main {
     {
     	parseCommandline(args);
 
-    	System.out.println(DRIVER_NAME+" "+Version.getVersionString());
+        System.out.println(DRIVER_NAME+" "+Version.getVersionString());
+        try (InputStream in = new FileInputStream(propertiesFilename)) {
+            if (! MudProperties.loadProperties(propertiesFilename, in)) {
+                System.exit(1);
+            }
+        } catch (IOException ioe) {
+            System.err.println("Error: Problem loading ".concat(propertiesFilename).concat(": ").concat(ioe.toString()));
+            System.exit(1);
+        }
+
     }
 
     /**
@@ -75,7 +87,7 @@ public final class Main {
             	}
                 System.out.println("Usage: "+DRIVER_NAME+" [options] [<config properties>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+propertiesFilename+"'.");
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+MudProperties.PROPERTIES_FILE+"'.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
                 needToExit = true;
@@ -85,7 +97,7 @@ public final class Main {
             	if (needToExit) {
             		System.out.println();
             	}
-                System.out.println("No help for config properties yet.");
+            	MudProperties.printTemplate();
                 needToExit = true;
             }
 
