@@ -28,7 +28,7 @@ public class Version {
      */
     private static void loadProperties() {
         boolean loaded = false;
-        final String versionProperties = "/org/ldmud/ldmud/version.properties";
+        final String versionProperties = "/org/ldmud/jldmud/version.properties";
         try (InputStream in = Version.class.getResourceAsStream(versionProperties)) {
             if (in != null) {
                 Properties properties = new Properties();
