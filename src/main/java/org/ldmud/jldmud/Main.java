@@ -8,12 +8,12 @@ import java.io.PrintWriter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
 
 /**
  * The entry point into the Game Driver.<p/>
@@ -55,14 +55,24 @@ public final class Main {
             options.addOption(helpConfig);
             options.addOption(version);
 
-            CommandLineParser parser = new GnuParser();
+            CommandLineParser parser = new PosixParser();
             CommandLine line = parser.parse(options, args);
+
+            /* Handle the print-help-and-exit options first, to allow them to be chained in a nice way. */
+
+            if (line.hasOption(version.getOpt())) {
+            	System.out.println(DRIVER_NAME+" "+Version.getVersionString()+" - a LPMud Game Driver.");
+                needToExit = true;
+            }
 
             if (line.hasOption(help.getOpt())) {
                 final PrintWriter systemOut = new PrintWriter(System.out, true);
 
             	HelpFormatter formatter = new HelpFormatter();
 
+            	if (needToExit) {
+            		System.out.println();
+            	}
                 System.out.println("Usage: "+DRIVER_NAME+" [options] [<config properties>]");
                 System.out.println();
                 formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+propertiesFilename+"'.");
@@ -72,13 +82,15 @@ public final class Main {
             }
 
             if (line.hasOption(helpConfig.getLongOpt())) {
+            	if (needToExit) {
+            		System.out.println();
+            	}
                 System.out.println("No help for config properties yet.");
                 needToExit = true;
             }
 
-            if (line.hasOption(version.getOpt())) {
-            	System.out.println(DRIVER_NAME+" "+Version.getVersionString()+" - a LPMud Game Driver.");
-                needToExit = true;
+            if (needToExit) {
+                System.exit(0);
             }
 
             if (line.getArgs().length > 1) {
@@ -93,10 +105,6 @@ public final class Main {
         } catch (ParseException e) {
             System.err.println("Parse exception: "+e);
             System.exit(1);
-        }
-
-        if (needToExit) {
-            System.exit(0);
         }
     }
 }
