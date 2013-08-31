@@ -1,4 +1,7 @@
-/* Copyright (C) LDMud developers */
+/**
+ * Copyright (C) 2013 LDMud developers
+ * This file is free software under the MIT license - see the file LICENSE for details.
+ */
 package org.ldmud.jldmud;
 
 import java.io.IOException;
