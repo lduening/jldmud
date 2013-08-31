@@ -177,9 +177,7 @@ public class MudProperties {
         for (PropertyBase<?> entry : propertyList) {
             String value = properties.getProperty(entry.name);
             String error = null;
-            if (value == null && entry.required) {
-                error = "Property is required.";
-            } else {
+            if (value != null) {
                 error = entry.parseValue(value);
             }
             if (StringUtils.isEmpty(error) && entry.value == null && entry.required) {
