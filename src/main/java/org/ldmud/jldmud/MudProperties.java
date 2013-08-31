@@ -14,7 +14,7 @@ import java.util.Properties;
 import org.apache.commons.lang.StringUtils;
 
 /**
- * The Muds properties, are read from the configuration file.<p/>
+ * The Mud's properties, are read from the configuration file.<p/>
  *
  * In addition to storing the values, the class also attempts to generalize
  * the way the properties are defined, as well as generating a template property
@@ -81,6 +81,16 @@ public class MudProperties {
         }
 
         /**
+         * Create the self-description string suitable for a properties template file.
+         *
+         * @return The (multi-line) self description string
+         */
+        public String describe() {
+            return "# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
+                   name+"="+(defaultValue != null ? defaultValue : "");
+        }
+
+        /**
          * Parse the given string for the desired value, and set the {@link #value} member from it.
          *
          * @param v The property string to parse
@@ -106,10 +116,11 @@ public class MudProperties {
         @Override
         public String parseValue(String v) {
             if (! StringUtils.isEmpty(v)) {
-                value = new File(v);
-                if (!value.isDirectory()) {
+                File f = new File(v);
+                if (!f.isDirectory()) {
                     return "'" + v + "' doesn't exist, or is not a directory.";
                 }
+                value = f;
             }
 
             return null;
@@ -131,26 +142,11 @@ public class MudProperties {
      */
     public static boolean loadProperties(String propertyFileName, InputStream propertyFile) {
         try {
-            List<String> errors = new ArrayList<>();
 
             Properties properties = new Properties();
             properties.load(propertyFile);
 
-            for (PropertyBase<?> entry : PropertyBase.allProperties) {
-                String value = properties.getProperty(entry.name);
-                String error = null;
-                if (value == null && entry.required) {
-                    error = "Property is required.";
-                } else {
-                    error = entry.parseValue(value);
-                }
-                if (StringUtils.isEmpty(error) && entry.value == null && entry.required) {
-                    error = "Property is required.";
-                }
-                if (! StringUtils.isEmpty(error)) {
-                    errors.add("Property '"+entry.name+"': "+error);
-                }
-            }
+            List<String> errors = loadProperties(properties, PropertyBase.allProperties);
 
             if (! errors.isEmpty()) {
                 System.out.println();
@@ -159,12 +155,41 @@ public class MudProperties {
                     System.err.println("  "+entry);
                 }
             }
+
             return ! errors.isEmpty();
         } catch (IOException ioe) {
             System.out.println();
             System.err.println("Error: Problem loading ".concat(propertyFileName).concat(":").concat(ioe.toString()));
             return false;
         }
+    }
+
+    /**
+     * Load the given properties and validate them.
+     *
+     * @param properties The properties file read from the input source.
+     * @param propertyList The list of property instances to load the values into.
+     * @return A list of errors, if any property value failed to validate.
+     */
+    static List<String> loadProperties(Properties properties, List<PropertyBase<?>> propertyList) {
+        List<String> errors = new ArrayList<>();
+
+        for (PropertyBase<?> entry : propertyList) {
+            String value = properties.getProperty(entry.name);
+            String error = null;
+            if (value == null && entry.required) {
+                error = "Property is required.";
+            } else {
+                error = entry.parseValue(value);
+            }
+            if (StringUtils.isEmpty(error) && entry.value == null && entry.required) {
+                error = "Property is required.";
+            }
+            if (!StringUtils.isEmpty(error)) {
+                errors.add("Property '" + entry.name + "': " + error);
+            }
+        }
+        return errors;
     }
 
     /**
@@ -175,8 +200,8 @@ public class MudProperties {
         System.out.println("# Properties with defaults will have their default value filled in.");
         System.out.println();
         for (PropertyBase<?> entry : PropertyBase.allProperties) {
-            System.out.println("# "+(entry.required ? "" : "Optional: ")+entry.description);
-            System.out.println(entry.name+"="+(entry.defaultValue != null ? entry.defaultValue : ""));
+            System.out.println(entry.describe());
+            System.out.println();
         }
     }
 }
