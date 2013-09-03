@@ -53,7 +53,7 @@ public final class Main {
         try {
             Option configProperty = OptionBuilder.withLongOpt("config").withArgName("property=value").hasArgs(2).withValueSeparator()
                                                  .withDescription("Set the configuration property to the given value (overrides any setting in the <config properties> file). Unsupported properties are ignored.")
-                                                 .create("D");
+                                                 .create("C");
             Option help = OptionBuilder.withLongOpt("help").withDescription("Prints the help text and exits.").create("h");
             Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Prints the <config properties> help text and exits.").create();
             Option version = OptionBuilder.withLongOpt("version").withDescription("Prints the driver version and exits").create("V");
