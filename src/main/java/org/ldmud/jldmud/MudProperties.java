@@ -92,6 +92,16 @@ public class MudProperties {
         }
 
         /**
+         * Print the effective setting of the property, inclusive description.
+         *
+         * @return The (multi-line) string describing the property setting.
+         */
+        public String effective() {
+            return "# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
+                   (value == null ? "#" : "") + name+"="+(value != null ? value : "");
+        }
+
+        /**
          * Parse the given string for the desired value, and set the {@link #value} member from it.
          *
          * @param v The property string to parse
@@ -147,25 +157,23 @@ public class MudProperties {
         try (InputStream in = new FileInputStream(propertyFileName)) {
             properties.load(in);
         } catch (IOException ioe) {
-            System.out.println();
             if (overrideProperties.isEmpty()) {
-                System.err.println("Error: Problem loading ".concat(propertyFileName).concat(":").concat(ioe.toString()));
+                System.err.println("Error: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
                 return false;
             }
-            System.err.println("Warning: Problem loading ".concat(propertyFileName).concat(":").concat(ioe.toString()));
+            System.err.println("Warning: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
         }
 
         List<String> errors = loadProperties(properties, overrideProperties, PropertyBase.allProperties);
 
         if (!errors.isEmpty()) {
-            System.out.println();
             System.err.println("Problems loading the configuration '" + propertyFileName + "':");
             for (String entry : errors) {
                 System.err.println("  " + entry);
             }
         }
 
-        return !errors.isEmpty();
+        return errors.isEmpty();
     }
 
     /**
@@ -208,5 +216,18 @@ public class MudProperties {
             System.out.println(entry.describe());
             System.out.println();
         }
+    }
+
+    /**
+     * Using the registered options, print the currently effective settings.
+     */
+    public static void printEffectiveProperties() {
+        System.out.println("# -- Effective configuration properties --");
+        System.out.println();
+        for (PropertyBase<?> entry : PropertyBase.allProperties) {
+            System.out.println(entry.effective());
+            System.out.println();
+        }
+        System.out.println("# -- END of effective configuration properties --");
     }
 }
