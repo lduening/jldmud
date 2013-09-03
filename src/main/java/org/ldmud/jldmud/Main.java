@@ -4,10 +4,8 @@
  */
 package org.ldmud.jldmud;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -29,6 +27,7 @@ public final class Main {
 
 	/* Command line Arguments */
 	private static String propertiesFilename = MudProperties.PROPERTIES_FILE;
+	private static Properties configProperties = new Properties();
 
     /**
      * Main method
@@ -38,15 +37,9 @@ public final class Main {
     	parseCommandline(args);
 
         System.out.println(DRIVER_NAME+" "+Version.getVersionString());
-        try (InputStream in = new FileInputStream(propertiesFilename)) {
-            if (! MudProperties.loadProperties(propertiesFilename, in)) {
-                System.exit(1);
-            }
-        } catch (IOException ioe) {
-            System.err.println("Error: Problem loading ".concat(propertiesFilename).concat(": ").concat(ioe.toString()));
+        if (! MudProperties.loadProperties(propertiesFilename, configProperties)) {
             System.exit(1);
         }
-
     }
 
     /**
@@ -58,6 +51,9 @@ public final class Main {
         boolean needToExit = false;
 
         try {
+            Option configProperty = OptionBuilder.withLongOpt("config").withArgName("property=value").hasArgs(2).withValueSeparator()
+                                                 .withDescription("Set the configuration property to the given value (overrides any setting in the <config properties> file). Unsupported properties are ignored.")
+                                                 .create("D");
             Option help = OptionBuilder.withLongOpt("help").withDescription("Prints the help text and exits.").create("h");
             Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Prints the <config properties> help text and exits.").create();
             Option version = OptionBuilder.withLongOpt("version").withDescription("Prints the driver version and exits").create("V");
@@ -66,6 +62,7 @@ public final class Main {
             options.addOption(help);
             options.addOption(helpConfig);
             options.addOption(version);
+            options.addOption(configProperty);
 
             CommandLineParser parser = new PosixParser();
             CommandLine line = parser.parse(options, args);
@@ -87,7 +84,8 @@ public final class Main {
             	}
                 System.out.println("Usage: "+DRIVER_NAME+" [options] [<config properties>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+MudProperties.PROPERTIES_FILE+"'.");
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+MudProperties.PROPERTIES_FILE+"'. "+
+                                                                        "The properties file must exist if no configuration property is specified via commandline argument.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
                 needToExit = true;
@@ -103,6 +101,11 @@ public final class Main {
 
             if (needToExit) {
                 System.exit(0);
+            }
+
+            if (line.hasOption(configProperty.getLongOpt())) {
+                configProperties = line.getOptionProperties(configProperty.getLongOpt());
+                System.out.println("DEBUG: configProperties set: "+configProperties);
             }
 
             if (line.getArgs().length > 1) {
