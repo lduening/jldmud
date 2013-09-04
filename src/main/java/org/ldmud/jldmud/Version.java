@@ -14,7 +14,10 @@ import org.apache.commons.lang.StringUtils;
  * Version information about the driver, read from the version.properties resource.
  */
 public class Version {
-	public static String ReleaseType;
+    // The official name of the project.
+    public static final String DRIVER_NAME = "jLDMud";
+
+    public static String ReleaseType;
 	public static String ReleaseLongType;
 	public static String ReleaseDate;
 	public static String Version;

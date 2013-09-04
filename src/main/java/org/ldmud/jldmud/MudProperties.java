@@ -5,6 +5,7 @@
 package org.ldmud.jldmud;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -91,6 +92,16 @@ public class MudProperties {
         }
 
         /**
+         * Print the effective setting of the property, inclusive description.
+         *
+         * @return The (multi-line) string describing the property setting.
+         */
+        public String effective() {
+            return "# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
+                   (value == null ? "#" : "") + name+"="+(value != null ? value : "");
+        }
+
+        /**
          * Parse the given string for the desired value, and set the {@link #value} member from it.
          *
          * @param v The property string to parse
@@ -133,49 +144,51 @@ public class MudProperties {
     public static final DirectoryProperty mudDirectory = new DirectoryProperty("mud.dir", "The root directory of the mud lib.", true);
 
     /**
-     * Load the properties from the given input source, and validate them. If the validation fails,
-     * an error message is printed to stderr.
+     * Load the properties from the given input source and/or the override properties, and validate them.
+     * If the validation fails, an error message is printed to stderr.
      *
-     * @param propertyFileName The name of the properties file, for error messages
-     * @param propertyFile The properties file
+     * @param propertyFileName The name of the properties file
+     * @param overrideProperties A manually created set of properties, overriding those in the properties file. If this set
+     *          is not empty, the {@code propertyFileName} need not exist.
      * @return {@code true} if the file was successfully loaded.
      */
-    public static boolean loadProperties(String propertyFileName, InputStream propertyFile) {
-        try {
-
-            Properties properties = new Properties();
-            properties.load(propertyFile);
-
-            List<String> errors = loadProperties(properties, PropertyBase.allProperties);
-
-            if (! errors.isEmpty()) {
-                System.out.println();
-                System.err.println("Problems loading the configuration '"+propertyFileName+"':");
-                for (String entry : errors) {
-                    System.err.println("  "+entry);
-                }
-            }
-
-            return ! errors.isEmpty();
+    public static boolean loadProperties(String propertyFileName, Properties overrideProperties) {
+        Properties properties = new Properties();
+        try (InputStream in = new FileInputStream(propertyFileName)) {
+            properties.load(in);
         } catch (IOException ioe) {
-            System.out.println();
-            System.err.println("Error: Problem loading ".concat(propertyFileName).concat(":").concat(ioe.toString()));
-            return false;
+            if (overrideProperties.isEmpty()) {
+                System.err.println("Error: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
+                return false;
+            }
+            System.err.println("Warning: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
         }
+
+        List<String> errors = loadProperties(properties, overrideProperties, PropertyBase.allProperties);
+
+        if (!errors.isEmpty()) {
+            System.err.println("Problems loading the configuration '" + propertyFileName + "':");
+            for (String entry : errors) {
+                System.err.println("  " + entry);
+            }
+        }
+
+        return errors.isEmpty();
     }
 
     /**
      * Load the given properties and validate them.
      *
      * @param properties The properties file read from the input source.
+     * @param overrideProperties A manually created set of properties, overriding those in the properties file.
      * @param propertyList The list of property instances to load the values into.
      * @return A list of errors, if any property value failed to validate.
      */
-    static List<String> loadProperties(Properties properties, List<PropertyBase<?>> propertyList) {
+    static List<String> loadProperties(Properties properties, Properties overrideProperties, List<PropertyBase<?>> propertyList) {
         List<String> errors = new ArrayList<>();
 
         for (PropertyBase<?> entry : propertyList) {
-            String value = properties.getProperty(entry.name);
+            String value = overrideProperties.containsKey(entry.name) ? overrideProperties.getProperty(entry.name) : properties.getProperty(entry.name);
             String error = null;
             if (value != null) {
                 error = entry.parseValue(value);
@@ -195,11 +208,26 @@ public class MudProperties {
      */
     public static void printTemplate() {
         System.out.println("# This is a template Mud properties file.");
-        System.out.println("# Properties with defaults will have their default value filled in.");
+        System.out.println("# Properties with defaults will have their default value printed as example value.");
+        System.out.println("# All properties can also be specified as arguments on the commandline; in that case, any");
+        System.out.println("# commandline value overrides a corresponding properties file value.");
         System.out.println();
         for (PropertyBase<?> entry : PropertyBase.allProperties) {
             System.out.println(entry.describe());
             System.out.println();
         }
+    }
+
+    /**
+     * Using the registered options, print the currently effective settings.
+     */
+    public static void printEffectiveProperties() {
+        System.out.println("# -- Effective configuration properties --");
+        System.out.println();
+        for (PropertyBase<?> entry : PropertyBase.allProperties) {
+            System.out.println(entry.effective());
+            System.out.println();
+        }
+        System.out.println("# -- END of effective configuration properties --");
     }
 }

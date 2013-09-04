@@ -45,28 +45,28 @@ public class MudPropertiesTest {
 
         // Check for missing properties
         properties = new Properties();
-        errors = MudProperties.loadProperties(properties, makePropertyList(requiredProp));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for required properties with empty values
         properties = new Properties();
         properties.put(requiredProp.name, "");
-        errors = MudProperties.loadProperties(properties, makePropertyList(requiredProp));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for optional properties
         properties = new Properties();
-        errors = MudProperties.loadProperties(properties, makePropertyList(optionalProp));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         properties = new Properties();
         properties.put(optionalProp.name, "");
-        errors = MudProperties.loadProperties(properties, makePropertyList(optionalProp));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         // Check for multiple missing required properties
         properties = new Properties();
-        errors = MudProperties.loadProperties(properties, makePropertyList(requiredProp, requiredProp2));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(requiredProp, requiredProp2));
         assertEquals(errors.size(), 2);
 
         // Check for proper passing of parse errors
@@ -78,9 +78,33 @@ public class MudPropertiesTest {
         };
         properties = new Properties();
         properties.put("mud.fail", "foo");
-        errors = MudProperties.loadProperties(properties, makePropertyList(parseProp));
+        errors = MudProperties.loadProperties(properties, new Properties(), makePropertyList(parseProp));
         assertEquals(errors.size(), 1);
         assertEquals(errors.get(0), "Property 'mud.fail': failure");
+    }
+
+    @Test
+    public void testPropertyOverride() {
+        DirectoryProperty requiredProp = new DirectoryProperty("mud.dir", "Description", true);
+        Properties properties;
+        Properties overrideProperties;
+        List<String> errors;
+
+        // Check for existence override
+        properties = new Properties();
+        overrideProperties = new Properties();
+        overrideProperties.put(requiredProp.name, ".");
+        errors = MudProperties.loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        assertEquals(errors.size(), 0);
+
+        // Check for value override
+        properties = new Properties();
+        properties.put(requiredProp.name, "doesn't exist");
+        overrideProperties = new Properties();
+        overrideProperties.put(requiredProp.name, ".");
+        errors = MudProperties.loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        assertEquals(errors.size(), 0);
+        assertEquals(requiredProp.value.toString(), ".");
     }
 
     @Test
