@@ -27,7 +27,7 @@ public class CommandLineArguments {
     /* -- Parsed command line Arguments -- */
 
     /* Name of the properties */
-    private String propertiesFilename = MudProperties.PROPERTIES_FILE;
+    private String propertiesFilename = GameConfiguration.PROPERTIES_FILE;
 
     /* Manually provided configuration properties */
     private Properties configProperties = new Properties();
@@ -86,7 +86,7 @@ public class CommandLineArguments {
                 }
                 System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config properties>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+MudProperties.PROPERTIES_FILE+"'. "+
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+GameConfiguration.PROPERTIES_FILE+"'. "+
                                                                         "The properties file must exist if no configuration property is specified via commandline argument.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
@@ -97,7 +97,7 @@ public class CommandLineArguments {
                 if (needToExit) {
                     System.out.println();
                 }
-                MudProperties.printTemplate();
+                GameConfiguration.printTemplate();
                 needToExit = true;
             }
 
