@@ -1,3 +1,14 @@
 Java Bytecode Libraries:
     http://www.csg.ci.i.u-tokyo.ac.jp/~chiba/javassist/
     org.objectweb
+
+http://code.google.com/p/telnetd-x/
+
+Ideas:
+  In properties, note that depending on the property, empty values may fall back
+  to the default value, or not.
+
+  The log files: if the name is kept empty, the log files will not be configured
+  - a user supplied log4j representation has to do that.
+  Allow a property for the regular class log file.
+  Implement an interface to programmatically modify the log4j settings.
