@@ -18,10 +18,14 @@ import org.apache.commons.lang.StringUtils;
  * The Mud's configuration properties.<p/>
  *
  * The properties are primarily read from a configuration file, but the
- * class allows for the manual override from a {@code Properties} instance.<p/>
+ * class allows for the manual override from a {@code Properties} instance.
+ * In addition, it serves as storage for runtime-derived configuration
+ * properties (like the absolute actual path to the mudlib as opposed to
+ * the mere configuration value).<p/>
  *
  * In addition to storing the values, the class also attempts to generalize
- * the way the properties are defined.
+ * the way the properties are defined, to simplify the definition itself,
+ * and the generation of help texts.
  */
 public class GameConfiguration {
 
@@ -113,7 +117,7 @@ public class GameConfiguration {
     }
 
     /**
-     * A property holding a directory, which must exist.
+     * A property holding an directory, which must exist.
      */
     static class DirectoryProperty extends PropertyBase<File> {
 
@@ -144,6 +148,7 @@ public class GameConfiguration {
      * The properties themselves.
      */
     private static final DirectoryProperty mudDirectory = new DirectoryProperty("mud.dir", "The root directory of the mud lib, which is also the working directory of the driver process.", true);
+    private static File mudRoot = null;
 
     /**
      * Load the properties from the given input source and/or the override properties, and validate them.
@@ -233,10 +238,32 @@ public class GameConfiguration {
         System.out.println("# -- END of effective Mud configuration properties --");
     }
 
-    /* ------------------------- Property Accessors ---------------------------------- */
+    /* --------------------- Configuration Property Accessors ------------------------------ */
 
+    /**
+     * The configured mud directory may have been specified relative to the initial working
+     * directory, so it's absolute path may no longer be correct once the startup is complete. Instead, create
+     * paths relative to the value of {@link GameConfiguration#getMudRoot() getMudRoot()}.
+     *
+     * @return The configured mud directory (may be relative to the initial working directory).
+     */
     public static File getMudDirectory() {
         return mudDirectory.value;
     }
 
+    /* --------------------- Calculated Property Accessors ------------------------------ */
+
+    /**
+     * @return The effective absolute root directory of the mud.
+     */
+    public static File getMudRoot() {
+        return mudRoot;
+    }
+
+    /**
+     * @param mudRoot The effective absolute root directory of the mud, set during startup.
+     */
+    public static void setMudRoot(File mudRoot) {
+        GameConfiguration.mudRoot = mudRoot;
+    }
 }

@@ -4,6 +4,7 @@
  */
 package org.ldmud.jldmud;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -34,13 +35,14 @@ public final class Main {
         // but by changing the 'user.dir' system property the same effect is achieved as the property
         // is used when the Java runtime resolves relative paths.
         try {
-            final String dirPath = GameConfiguration.getMudDirectory().getCanonicalPath();
-            if (null == System.setProperty("user.dir", dirPath)) {
-                System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + dirPath + "')");
+            final File mudRoot = GameConfiguration.getMudDirectory().getCanonicalFile();
+            if (null == System.setProperty("user.dir", mudRoot.getAbsolutePath())) {
+                System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + mudRoot + "')");
                 System.exit(1);
             }
+            GameConfiguration.setMudRoot(mudRoot);
         } catch (IOException e) {
-            System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('"+GameConfiguration.getMudDirectory().getPath()+"'): "+e);
+            System.err.println("Error: Can't resolve the mud directory path '"+GameConfiguration.getMudDirectory().getPath()+"': "+e);
             System.exit(1);
         }
     }
