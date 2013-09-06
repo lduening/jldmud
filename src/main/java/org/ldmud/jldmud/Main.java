@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 LDMud developers
+ * Copyright (C) 2013 jLDMud developers
  * This file is free software under the MIT license - see the file LICENSE for details.
  */
 package org.ldmud.jldmud;

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 LDMud Developers.
+ * Copyright (C) 2013 jLDMud Developers.
  * This file is free software under the MIT License - see the file LICENSE for details.
  */
 package org.ldmud.jldmud;
@@ -356,7 +356,7 @@ public class GameConfiguration {
 
     /**
      * The configured mud directory may have been specified relative to the initial working
-     * directory, so it's absolute path may no longer be correct once the startup is complete. Instead, create
+     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
      * paths relative to the value of {@link GameConfiguration#getMudRoot() getMudRoot()}.
      * TODO: Needed?
      *

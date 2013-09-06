@@ -20,6 +20,26 @@
 	</properties>
 
 	<build>
+		<resources>
+			<!-- Copy regular resources -->
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+				<includes>
+					<include>**/*</include>
+				</includes>
+				<targetPath>${project.build.outputDirectory}</targetPath>
+			</resource>
+			
+			<!-- Copy additional files into the target resources -->
+			<resource>
+				<directory>${basedir}</directory>
+				<includes>
+					<include>LICENSE</include>
+				</includes>
+				<targetPath>${project.build.outputDirectory}/org/ldmud/jldmud</targetPath>
+			</resource>
+		</resources>
+	    
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

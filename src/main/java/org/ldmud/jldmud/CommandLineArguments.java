@@ -1,9 +1,13 @@
 /**
- * Copyright (C) 2013 LDMud Developers.
+ * Copyright (C) 2013 jLDMud Developers.
  * This file is free software under the MIT License - see the file LICENSE for details.
  */
 package org.ldmud.jldmud;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.Properties;
 
@@ -61,6 +65,7 @@ public class CommandLineArguments {
             Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings> help text and exits.").create();
             Option version = OptionBuilder.withLongOpt("version").withDescription("Print the driver version and exits").create("V");
             Option printConfig = OptionBuilder.withLongOpt("print-config").withDescription("Print the effective configuration settings to stdout and exit.").create();
+            Option printLicense = OptionBuilder.withLongOpt("license").withDescription("Print the software license and exit.").create();
 
             Options options = new Options();
             options.addOption(help);
@@ -68,6 +73,7 @@ public class CommandLineArguments {
             options.addOption(version);
             options.addOption(configSetting);
             options.addOption(printConfig);
+            options.addOption(printLicense);
 
             CommandLineParser parser = new PosixParser();
             CommandLine line = parser.parse(options, args);
@@ -78,6 +84,20 @@ public class CommandLineArguments {
 
             if (line.hasOption(version.getOpt())) {
                 System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString()+" - a LPMud Game Driver.");
+                System.out.println(Version.Copyright);
+                System.out.print(Version.DRIVER_NAME+" is licensed under the "+Version.License+".");
+                if (!line.hasOption(printLicense.getLongOpt())) {
+                    System.out.print(" Use option --license for details.");
+                }
+                System.out.println();
+                helpOptionsGiven = true;
+            }
+
+            if (line.hasOption(printLicense.getLongOpt())) {
+                if (helpOptionsGiven) {
+                    System.out.println();
+                }
+                printLicense();
                 helpOptionsGiven = true;
             }
 
@@ -136,6 +156,26 @@ public class CommandLineArguments {
             System.err.println("Error: "+e.getMessage());
             exitCode = 1;
             return true;
+        }
+    }
+
+    /**
+     * Print the included LICENSE file to stdout.
+     */
+    private void printLicense() {
+        final String filename = "/org/ldmud/jldmud/LICENSE";
+        try (InputStream in = Version.class.getResourceAsStream(filename)) {
+            if (in != null) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                    while (br.ready()) {
+                        System.out.println(br.readLine());
+                    }
+                } // auto-close reader
+            } else {
+                System.err.println("Error: Problem loading ".concat(filename).concat(": Resource not found"));
+            }
+        } catch (IOException ioe) {
+            System.err.println("Error: Problem loading ".concat(filename).concat(": ").concat(ioe.toString()));
         }
     }
 

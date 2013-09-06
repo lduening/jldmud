@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013 LDMud developers
+ * Copyright (C) 2013 jLDMud developers
  * This file is free software under the MIT license - see the file LICENSE for details.
  */
 package org.ldmud.jldmud;
@@ -24,6 +24,8 @@ public class Version {
 	public static String Major;
 	public static String Minor;
 	public static String Micro;
+	public static String Copyright;
+    public static String License;
 
     static {
         loadProperties();
@@ -47,9 +49,11 @@ public class Version {
                 Major = properties.getProperty("version.major");
                 Minor = properties.getProperty("version.minor");
                 Micro = properties.getProperty("version.micro");
+                Copyright = properties.getProperty("version.copyright");
+                License = properties.getProperty("version.license");
             }
         } catch (IOException ioe) {
-            System.err.println("Error: Problem loading ".concat(versionProperties).concat(":").concat(ioe.toString()));
+            System.err.println("Error: Problem loading ".concat(versionProperties).concat(": ").concat(ioe.toString()));
         }
         if (!loaded) {
             throw new RuntimeException("Unable to load ".concat(versionProperties));
