@@ -4,8 +4,6 @@
  */
 package org.ldmud.jldmud;
 
-import java.io.File;
-import java.io.IOException;
 
 /**
  * The entry point into the Game Driver.<p/>
@@ -20,29 +18,27 @@ public final class Main {
     public static void main( String[] args )
     {
         CommandLineArguments cliArgs = new CommandLineArguments();
-    	cliArgs.parseCommandline(args);
+    	if (cliArgs.parseCommandline(args)) {
+    	    System.exit(cliArgs.getExitCode());
+    	}
 
         System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString());
-        if (! GameConfiguration.loadProperties(cliArgs.getPropertiesFilename(), cliArgs.getConfigProperties())) {
+        GameConfiguration config = new GameConfiguration();
+
+        if (! config.loadProperties(cliArgs.getSettingsFilename(), cliArgs.getConfigSettings())) {
             System.exit(1);
         }
+
         if (cliArgs.getPrintConfiguration()) {
-            GameConfiguration.printEffectiveProperties();
+            config.printEffectiveSettings();
             System.exit(0);
         }
 
         // Java doesn't directly allow to change the current working directory of the process itself;
         // but by changing the 'user.dir' system property the same effect is achieved as the property
         // is used when the Java runtime resolves relative paths.
-        try {
-            final File mudRoot = GameConfiguration.getMudDirectory().getCanonicalFile();
-            if (null == System.setProperty("user.dir", mudRoot.getAbsolutePath())) {
-                System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + mudRoot + "')");
-                System.exit(1);
-            }
-            GameConfiguration.setMudRoot(mudRoot);
-        } catch (IOException e) {
-            System.err.println("Error: Can't resolve the mud directory path '"+GameConfiguration.getMudDirectory().getPath()+"': "+e);
+        if (null == System.setProperty("user.dir", config.getMudRoot().getAbsolutePath())) {
+            System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + config.getMudRoot().getAbsolutePath() + "')");
             System.exit(1);
         }
     }

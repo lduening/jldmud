@@ -10,8 +10,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import org.ldmud.jldmud.GameConfiguration.DirectoryProperty;
-import org.ldmud.jldmud.GameConfiguration.PropertyBase;
+import org.ldmud.jldmud.GameConfiguration.SettingProperty;
+import org.ldmud.jldmud.GameConfiguration.SettingBase;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
@@ -23,69 +23,72 @@ public class GameConfigurationTest {
 
     @Test
     public void testPropertyRegistration() {
-        PropertyBase.allProperties = new ArrayList<>();
-        DirectoryProperty prop1 = new DirectoryProperty("foo", "bar", true);
-        assertNotNull(PropertyBase.allProperties);
-        assertEquals(PropertyBase.allProperties.size(), 1);
+        GameConfiguration config = new GameConfiguration();
+        config.allSettings = new ArrayList<>();
+        SettingProperty prop1 = config.new SettingProperty("foo", "bar", true);
+        assertNotNull(config.allSettings);
+        assertEquals(config.allSettings.size(), 1);
 
-        DirectoryProperty prop2 = new DirectoryProperty("foo2", "bar", true);
-        assertEquals(PropertyBase.allProperties.size(), 2);
+        SettingProperty prop2 = config.new SettingProperty("foo2", "bar", true);
+        assertEquals(config.allSettings.size(), 2);
 
-        assertEquals(PropertyBase.allProperties.get(0), prop1);
-        assertEquals(PropertyBase.allProperties.get(1), prop2);
+        assertEquals(config.allSettings.get(0), prop1);
+        assertEquals(config.allSettings.get(1), prop2);
     }
 
     @Test
     public void testPropertyExistenceValidation() {
-        PropertyBase<?> requiredProp = new DirectoryProperty("mud.dir", "Description", true);
-        PropertyBase<?> requiredProp2 = new DirectoryProperty("mud.dir2", "Description", true);
-        PropertyBase<?> optionalProp = new DirectoryProperty("mud.opt", "Description", false);
+        GameConfiguration config = new GameConfiguration();
+        SettingBase<?> requiredProp = config.new SettingProperty("mud.dir", "Description", true);
+        SettingBase<?> requiredProp2 = config.new SettingProperty("mud.dir2", "Description", true);
+        SettingBase<?> optionalProp = config.new SettingProperty("mud.opt", "Description", false);
         Properties properties;
         List<String> errors;
 
         // Check for missing properties
         properties = new Properties();
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(requiredProp));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for required properties with empty values
         properties = new Properties();
         properties.put(requiredProp.name, "");
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(requiredProp));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for optional properties
         properties = new Properties();
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(optionalProp));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         properties = new Properties();
         properties.put(optionalProp.name, "");
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(optionalProp));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         // Check for multiple missing required properties
         properties = new Properties();
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(requiredProp, requiredProp2));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp, requiredProp2));
         assertEquals(errors.size(), 2);
 
         // Check for proper passing of parse errors
-        PropertyBase<?> parseProp = new PropertyBase<Integer>("mud.fail", "description", true) {
+        SettingBase<?> parseProp = config.new SettingBase<Integer>("mud.fail", "description", true) {
             @Override
-            public String parseValue(String v) {
+            public String parseValueImpl(String v) {
                 return "failure";
             }
         };
         properties = new Properties();
         properties.put("mud.fail", "foo");
-        errors = GameConfiguration.loadProperties(properties, new Properties(), makePropertyList(parseProp));
+        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(parseProp));
         assertEquals(errors.size(), 1);
-        assertEquals(errors.get(0), "Property 'mud.fail': failure");
+        assertEquals(errors.get(0), "Setting 'mud.fail': failure");
     }
 
     @Test
     public void testPropertyOverride() {
-        DirectoryProperty requiredProp = new DirectoryProperty("mud.dir", "Description", true);
+        GameConfiguration config = new GameConfiguration();
+        SettingProperty requiredProp = config.new SettingProperty("mud.dir", "Description", true);
         Properties properties;
         Properties overrideProperties;
         List<String> errors;
@@ -94,7 +97,7 @@ public class GameConfigurationTest {
         properties = new Properties();
         overrideProperties = new Properties();
         overrideProperties.put(requiredProp.name, ".");
-        errors = GameConfiguration.loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        errors = new GameConfiguration().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
         assertEquals(errors.size(), 0);
 
         // Check for value override
@@ -102,55 +105,64 @@ public class GameConfigurationTest {
         properties.put(requiredProp.name, "doesn't exist");
         overrideProperties = new Properties();
         overrideProperties.put(requiredProp.name, ".");
-        errors = GameConfiguration.loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        errors = new GameConfiguration().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
         assertEquals(errors.size(), 0);
         assertEquals(requiredProp.value.toString(), ".");
     }
 
     @Test
     public void testDirectoryProperty() {
-        DirectoryProperty prop;
+        GameConfiguration config = new GameConfiguration();
+        SettingProperty prop;
         String msg;
 
-        prop = new DirectoryProperty("mud.dir", "Description", false);
-        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=");
+        prop = config.new SettingProperty("mud.dir", "Description", false);
+        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = new DirectoryProperty("mud.dir", "Description", true);
-        assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"=");
+        prop = config.new SettingProperty("mud.dir", "Description", true);
+        assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = new DirectoryProperty("mud.dir", "Description", new File("foo"));
+        prop = config.new SettingProperty("mud.dir", "Description", new File("foo"));
         assertFalse(prop.required);
         assertNotNull(prop.defaultValue);
         assertEquals(prop.value, prop.defaultValue);
-        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=foo");
+        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=foo"+System.lineSeparator());
 
-        prop = new DirectoryProperty("mud.dir", "Description", false);
-
+        prop = config.new SettingProperty("mud.dir", "Description", false);
         msg = prop.parseValue(null);
         assertNull(msg);
         assertNull(prop.value);
+        assertNull(prop.effectiveValue);
 
+        prop = config.new SettingProperty("mud.dir", "Description", false);
         msg = prop.parseValue("");
         assertNull(msg);
         assertNull(prop.value);
+        assertNull(prop.effectiveValue);
 
+        prop = config.new SettingProperty("mud.dir", "Description", false);
         msg = prop.parseValue("doesn't exist");
         assertNotNull(msg);
         assertNull(prop.value);
+        assertNull(prop.effectiveValue);
 
+        prop = config.new SettingProperty("mud.dir", "Description", false);
         msg = prop.parseValue("LICENSE"); // Known existing file
         assertNotNull(msg);
         assertNull(prop.value);
+        assertNull(prop.effectiveValue);
 
+        prop = config.new SettingProperty("mud.dir", "Description", false);
         msg = prop.parseValue("."); // Current directory
         assertNull(msg);
         assertNotNull(prop.value);
+        assertNotNull(prop.effectiveValue);
     }
 
     /**
      * Convenience method for type-safe creation of a property list.
      */
-    private List<PropertyBase<?>> makePropertyList(PropertyBase<?>... props) {
+    private List<SettingBase<?>> makePropertyList(SettingBase<?>... props) {
         return Arrays.asList(props);
     }
 }

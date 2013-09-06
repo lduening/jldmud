@@ -6,6 +6,7 @@ package org.ldmud.jldmud;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -13,70 +14,96 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.WordUtils;
 
 /**
- * The Mud's configuration properties.<p/>
+ * The Mud's configuration settings.<p/>
  *
  * The properties are primarily read from a configuration file, but the
- * class allows for the manual override from a {@code Properties} instance.
- * In addition, it serves as storage for runtime-derived configuration
- * properties (like the absolute actual path to the mudlib as opposed to
- * the mere configuration value).<p/>
+ * class allows for the manual override from a {@code Properties} instance.<p/>
  *
  * In addition to storing the values, the class also attempts to generalize
- * the way the properties are defined, to simplify the definition itself,
- * and the generation of help texts.
+ * the way the settings are defined, to simplify the definition itself,
+ * and the generation of help texts.<p/>
+ *
+ * Due to the global nature of configuration settings, instances of this class
+ * (ok, the one instance) are not passed to the modules needing the values. Instead,
+ * either the individual values are passed by the Main module explicitly, or
+ * the modules can define their own 'configuration settings' classes, which this global
+ * class can then generate as needed. That way, the business modules aren't tempted to
+ * look at other modules parameters. And all the memory used for this instance can be
+ * released once initialization is complete.
  */
 public class GameConfiguration {
 
     /**
      * Default configuration filename.
      */
-    public final static String PROPERTIES_FILE = "mud.properties";
+    public final static String DEFAULT_SETTINGS_FILE = "mud.properties";
 
-    /**
-     * Helper constant for creating multi-line descriptions.
+    /*
+     * The settings themselves.
      */
-    @SuppressWarnings("unused")
-    private final static String NL = System.lineSeparator()+"# ";
+    private final SettingProperty mudDirectory = new SettingProperty("mud.dir", "The root directory of the mud lib, which is also the working directory of the driver process.", true);
+
+    /*
+     * This list tracks all settings as they are defined.
+     */
+    List<SettingBase<?>> allSettings;
 
     /**
-     * Base class describing a property.
+     * Base class describing a setting.<p/>
      *
-     * @param <T> The target type of the property value.
+     * The class allows options to create an effective value based
+     * upon the given value - to this end the retrieval of the
+     * final effective value is done through the method {@link #getEffectiveValue()},
+     * which just happens in its default implementation to return the
+     * given values.
+     *
+     * @param <T> The target type of the setting value.
      */
-    abstract static class PropertyBase<T> {
-        // The name of the property, e.g. 'mud.directory'
-        String name;
+    abstract class SettingBase<T> {
+        // The name of the setting, e.g. 'mud.directory'
+        protected String name;
 
-        // The description of the property, e.g. "The mud directory"
-        // The help printer will prepend '#' and possibly 'Optional: '; but
-        // for multi-line descriptions the wrapping with additional newlines and '#'
-        // need to be done by hand.
-        String description;
+        // The description of the setting, e.g. "The mud directory"
+        // The help printer will prepend '#' and possibly 'Optional: ', and
+        // take care of the wrapping. Embedded line feeds will be preserved.
+        protected String description;
 
-        // Flag whether the property is required
-        boolean required;
+        // Flag whether the setting is required
+        protected boolean required;
+
+        // Flag set to true if this setting was ever explicitly set.
+        protected boolean wasSet = false;
 
         // The parsed value
-        T value;
+        protected T value;
 
         // The default value (optional)
-        T defaultValue;
+        protected T defaultValue;
 
-        // This list tracks all properties as they are defined.
-        static List<PropertyBase<?>> allProperties = new ArrayList<>();
-
-        public PropertyBase(String name, String description, boolean required) {
+        public SettingBase(String name, String description, boolean required) {
             super();
             this.name = name;
             this.description = description;
             this.required = required;
 
-            allProperties.add(this);
+            registerThis();
         }
 
-        public PropertyBase(String name, String description, T defaultValue) {
+        /**
+         * Register this Setting instance with the allSettings list in the GameConfiguration class instance.
+         * The list is created if necessary.
+         */
+        private void registerThis() {
+            if (allSettings == null) {
+                allSettings = new ArrayList<>();
+            }
+            allSettings.add(this);
+        }
+
+        public SettingBase(String name, String description, T defaultValue) {
             super();
             this.name = name;
             this.description = description;
@@ -84,94 +111,148 @@ public class GameConfiguration {
             this.defaultValue = defaultValue;
             this.value = defaultValue;
 
-            allProperties.add(this);
+            registerThis();
         }
 
         /**
          * Create the self-description string suitable for a properties template file.
          *
-         * @return The (multi-line) self description string
+         * @return The multi-line self description string, with a trailing line break.
          */
         public String describe() {
-            return "# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
-                   name+"="+(defaultValue != null ? defaultValue : "");
+            return wrap("# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
+                   name+"="+(defaultValue != null ? defaultValue : "")+System.lineSeparator());
         }
 
         /**
-         * Print the effective setting of the property, inclusive description.
+         * Print the given and effective setting of the setting, inclusive description.
          *
-         * @return The (multi-line) string describing the property setting.
+         * @return The multi-line string describing the setting setting, with a trailing line break.
          */
         public String effective() {
-            return "# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
-                   (value == null ? "#" : "") + name+"="+(value != null ? value : "");
+            StringBuilder sb = new StringBuilder("# ");
+            if (!required) {
+                sb.append("Optional: ");
+            }
+            sb.append(description).append(System.lineSeparator());
+            if (!wasSet) {
+                if (value == null) {
+                    sb.append("# Using default value (unset).").append(System.lineSeparator());
+                } else {
+                    sb.append("# Using default value: ").append(value).append(System.lineSeparator());
+                }
+            } else if (value == null && getEffectiveValue() != null) {
+                sb.append("# Configured value unset.").append(System.lineSeparator());
+            } else if (value != null && !value.equals(getEffectiveValue())) {
+                sb.append("# Configured value: ").append(value).append(System.lineSeparator());
+            }
+
+            if (getEffectiveValue() == null) {
+                sb.append("# ").append(name).append("=");
+            } else {
+                sb.append(name).append("=").append(getEffectiveValue());
+            }
+            sb.append(System.lineSeparator());
+            return wrap(sb.toString());
         }
 
         /**
          * Parse the given string for the desired value, and set the {@link #value} member from it.
+         * The actual work of the parsing is done by {@link #parseValueImpl(String)}, this method
+         * just does some housekeeping.
+         *
+         * @param v The setting value string to parse
+         * @return An error message, or {@code null} if the value could be set.
+         */
+        public String parseValue(String v) {
+            String rc = parseValueImpl(v);
+            if (rc == null) {
+                wasSet = true;
+            }
+            return rc;
+        }
+
+        /**
+         * Parse the given string for the desired value, and set the {@link #value} member from it.
+         * This method is called as part of the {@link #parseValue(String)} processing.
          *
          * @param v The property string to parse
          * @return An error message, or {@code null} if the value could be set.
          */
-        public abstract String parseValue(String v);
+        protected abstract String parseValueImpl(String v);
+
+        /**
+         * @return the effective value of this property.
+         */
+        public T getEffectiveValue() {
+            return value;
+        }
     }
 
     /**
-     * A property holding an directory, which must exist.
+     * A setting holding an directory, which must exist.
+     * The effective value will be the absolute canonical file path.
      */
-    static class DirectoryProperty extends PropertyBase<File> {
+    class SettingProperty extends SettingBase<File> {
 
-        public DirectoryProperty(String name, String description, File defaultValue) {
+        File effectiveValue;
+
+        public SettingProperty(String name, String description, File defaultValue) {
             super(name, description, defaultValue);
         }
 
-        public DirectoryProperty(String name, String description,
+        public SettingProperty(String name, String description,
                 boolean required) {
             super(name, description, required);
         }
 
         @Override
-        public String parseValue(String v) {
+        public String parseValueImpl(String v) {
             if (! StringUtils.isEmpty(v)) {
                 File f = new File(v);
                 if (!f.isDirectory()) {
                     return "'" + v + "' doesn't exist, or is not a directory.";
                 }
                 value = f;
+                try {
+                    effectiveValue = f.getAbsoluteFile().getCanonicalFile();
+                } catch (IOException e) {
+                    return "'" + v +"' can't be resolved to a canonical path.";
+                }
             }
 
             return null;
         }
+
+        @Override
+        public File getEffectiveValue() {
+            return effectiveValue;
+        }
     }
 
-    /*
-     * The properties themselves.
-     */
-    private static final DirectoryProperty mudDirectory = new DirectoryProperty("mud.dir", "The root directory of the mud lib, which is also the working directory of the driver process.", true);
-    private static File mudRoot = null;
-
     /**
-     * Load the properties from the given input source and/or the override properties, and validate them.
+     * Load the settings from the given input source and/or the override properties, and validate them.
      * If the validation fails, an error message is printed to stderr.
      *
-     * @param propertyFileName The name of the properties file
-     * @param overrideProperties A manually created set of properties, overriding those in the properties file. If this set
+     * @param propertyFileName The name of the settings file in properties format.
+     * @param overrideProperties A manually created set of properties, overriding those in the settings file. If this set
      *          is not empty, the {@code propertyFileName} need not exist.
      * @return {@code true} if the file was successfully loaded.
      */
-    public static boolean loadProperties(String propertyFileName, Properties overrideProperties) {
+    public boolean loadProperties(String propertyFileName, Properties overrideProperties) {
         Properties properties = new Properties();
         try (InputStream in = new FileInputStream(propertyFileName)) {
             properties.load(in);
         } catch (IOException ioe) {
+            final String message = (ioe instanceof FileNotFoundException) ? "File not found" : ioe.toString();
             if (overrideProperties.isEmpty()) {
-                System.err.println("Error: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
+                System.err.println("Error: Problem loading ".concat(propertyFileName).concat(": ").concat(message));
                 return false;
             }
-            System.err.println("Warning: Problem loading ".concat(propertyFileName).concat(": ").concat(ioe.toString()));
+            System.err.println("Warning: Problem loading ".concat(propertyFileName).concat(": ").concat(message));
         }
 
-        List<String> errors = loadProperties(properties, overrideProperties, PropertyBase.allProperties);
+        List<String> errors = loadProperties(properties, overrideProperties, allSettings);
 
         if (!errors.isEmpty()) {
             System.err.println("Error: Property validation problems loading the configuration '" + propertyFileName + "':");
@@ -191,36 +272,66 @@ public class GameConfiguration {
      * @param propertyList The list of property instances to load the values into.
      * @return A list of errors, if any property value failed to validate.
      */
-    static List<String> loadProperties(Properties properties, Properties overrideProperties, List<PropertyBase<?>> propertyList) {
+     List<String> loadProperties(Properties properties, Properties overrideProperties, List<SettingBase<?>> propertyList) {
         List<String> errors = new ArrayList<>();
 
-        for (PropertyBase<?> entry : propertyList) {
+        for (SettingBase<?> entry : propertyList) {
             String value = overrideProperties.containsKey(entry.name) ? overrideProperties.getProperty(entry.name) : properties.getProperty(entry.name);
             String error = null;
             if (value != null) {
-                error = entry.parseValue(value);
+                error = entry.parseValue(StringUtils.strip(value));
             }
             if (StringUtils.isEmpty(error) && entry.value == null && entry.required) {
-                error = "Property is required.";
+                error = "Setting is required.";
             }
             if (!StringUtils.isEmpty(error)) {
-                errors.add("Property '" + entry.name + "': " + error);
+                errors.add("Setting '" + entry.name + "': " + error);
             }
         }
         return errors;
     }
 
     /**
+     * Wrap the given text to a line length of 70, while preserving hard line
+     * breaks. Wrapped lines will be prepended with '# '.
+     *
+     * @param lines The text to wrap, each String representing a line.
+     * @return The wrapped text, joined into one string, with a trailing line break.
+     */
+    static String wrap(String[] lines) {
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < lines.length; ++i) {
+            sb.append(WordUtils.wrap(lines[i], 70, System.lineSeparator() + "# ", false)).append(System.lineSeparator());
+        }
+        return sb.toString();
+    }
+
+
+    /**
+     * Wrap the given text to a line length of 70, while preserving hard line
+     * breaks. Wrapped lines will be prepended with '# '.
+     *
+     * @param in The string to wrap.
+     * @return The wrapped string, with a trailing line break.
+     */
+    static String wrap(String in) {
+        return wrap(StringUtils.split(in, System.lineSeparator()));
+    }
+
+    /**
      * Using the registered options, print an an example template.
      */
     public static void printTemplate() {
-        System.out.println("# This is a template Mud properties file.");
-        System.out.println("# Properties with defaults will have their default value printed as example value.");
-        System.out.println("# All properties can also be specified as arguments on the commandline; in that case, any");
-        System.out.println("# commandline value overrides a corresponding properties file value.");
+        System.out.print(wrap(new String[] {
+          "# This is a template Mud settings file.",
+          "#",
+          "# Settings with defaults will have their default value printed as example value.",
+          "#",
+          "# All settings can also be specified as arguments on the commandline; in that case, any commandline value overrides a corresponding properties file value."
+        }));
         System.out.println();
-        for (PropertyBase<?> entry : PropertyBase.allProperties) {
-            System.out.println(entry.describe());
+        for (SettingBase<?> entry : new GameConfiguration().allSettings) {
+            System.out.print(entry.describe());
             System.out.println();
         }
     }
@@ -228,11 +339,14 @@ public class GameConfiguration {
     /**
      * Using the registered options, print the currently effective settings.
      */
-    public static void printEffectiveProperties() {
-        System.out.println("# -- Effective Mud configuration properties --");
+    public void printEffectiveSettings() {
+        System.out.print(wrap(new String[] {
+          "# -- Effective Mud configuration settings --",
+          "# If the effective setting is different from the originally provided configuration value, that original value will be printed as comment."
+        }));
         System.out.println();
-        for (PropertyBase<?> entry : PropertyBase.allProperties) {
-            System.out.println(entry.effective());
+        for (SettingBase<?> entry : allSettings) {
+            System.out.print(entry.effective());
             System.out.println();
         }
         System.out.println("# -- END of effective Mud configuration properties --");
@@ -244,26 +358,18 @@ public class GameConfiguration {
      * The configured mud directory may have been specified relative to the initial working
      * directory, so it's absolute path may no longer be correct once the startup is complete. Instead, create
      * paths relative to the value of {@link GameConfiguration#getMudRoot() getMudRoot()}.
+     * TODO: Needed?
      *
      * @return The configured mud directory (may be relative to the initial working directory).
      */
-    public static File getMudDirectory() {
+    public File getMudDirectory() {
         return mudDirectory.value;
     }
-
-    /* --------------------- Calculated Property Accessors ------------------------------ */
 
     /**
      * @return The effective absolute root directory of the mud.
      */
-    public static File getMudRoot() {
-        return mudRoot;
-    }
-
-    /**
-     * @param mudRoot The effective absolute root directory of the mud, set during startup.
-     */
-    public static void setMudRoot(File mudRoot) {
-        GameConfiguration.mudRoot = mudRoot;
+    public File getMudRoot() {
+        return mudDirectory.getEffectiveValue();
     }
 }

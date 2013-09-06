@@ -17,7 +17,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
 /**
- * This class parses and holds the commandline arguments.<p/>
+ * This class parses and holds the command line arguments.<p/>
  *
  * Not only does this neatly keep the wall of help text out of the main
  * class; it also allows to discard of the CLI arguments once they are no longer needed.
@@ -26,14 +26,17 @@ public class CommandLineArguments {
 
     /* -- Parsed command line Arguments -- */
 
-    /* Name of the properties */
-    private String propertiesFilename = GameConfiguration.PROPERTIES_FILE;
+    /* Name of the settings file */
+    private String settingsFilename = GameConfiguration.DEFAULT_SETTINGS_FILE;
 
-    /* Manually provided configuration properties */
-    private Properties configProperties = new Properties();
+    /* Manually provided configuration settings */
+    private Properties configSettings = new Properties();
 
-    /* Print the effective configuration properties after the system is loaded. */
+    /* Print the effective configuration after the system is loaded. */
     private boolean printConfiguration = false;
+
+    /* -- Other variables -- */
+    private int exitCode = 0;
 
     /**
      * Constructor
@@ -44,26 +47,26 @@ public class CommandLineArguments {
 
     /**
      * Parse the commandline and set the associated globals.
-     * This method may exit the process, especially if an argument error is detected.
+     *
+     * @return {@code true} if the main program should exit; in that case {@link @getExitCode()} provides the suggest exit code.
      */
     @SuppressWarnings("static-access")
-    public void parseCommandline(String [] args) {
-        boolean needToExit = false;
+    public boolean parseCommandline(String [] args) {
 
         try {
-            Option configProperty = OptionBuilder.withLongOpt("config").withArgName("property=value").hasArgs(2).withValueSeparator()
-                                                 .withDescription("Set the configuration property to the given value (overrides any setting in the <config properties> file). Unsupported properties are ignored.")
+            Option configSetting = OptionBuilder.withLongOpt("config").withArgName("setting=value").hasArgs(2).withValueSeparator()
+                                                 .withDescription("Set the configuration setting to the given value (overrides any setting in the <config settings> file). Unsupported settings are ignored.")
                                                  .create("C");
             Option help = OptionBuilder.withLongOpt("help").withDescription("Print the help text and exits.").create("h");
-            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config properties> help text and exits.").create();
+            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings> help text and exits.").create();
             Option version = OptionBuilder.withLongOpt("version").withDescription("Print the driver version and exits").create("V");
-            Option printConfig = OptionBuilder.withLongOpt("print-config").withDescription("Print the effective configuration properties to stdout and exit.").create();
+            Option printConfig = OptionBuilder.withLongOpt("print-config").withDescription("Print the effective configuration settings to stdout and exit.").create();
 
             Options options = new Options();
             options.addOption(help);
             options.addOption(helpConfig);
             options.addOption(version);
-            options.addOption(configProperty);
+            options.addOption(configSetting);
             options.addOption(printConfig);
 
             CommandLineParser parser = new PosixParser();
@@ -71,9 +74,11 @@ public class CommandLineArguments {
 
             /* Handle the print-help-and-exit options first, to allow them to be chained in a nice way. */
 
+            boolean helpOptionsGiven = false;
+
             if (line.hasOption(version.getOpt())) {
                 System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString()+" - a LPMud Game Driver.");
-                needToExit = true;
+                helpOptionsGiven = true;
             }
 
             if (line.hasOption(help.getOpt())) {
@@ -81,32 +86,37 @@ public class CommandLineArguments {
 
                 HelpFormatter formatter = new HelpFormatter();
 
-                if (needToExit) {
+                if (helpOptionsGiven) {
                     System.out.println();
                 }
-                System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config properties>]");
+                System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config settings>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config properties> is a file containing the mud settings; if not specified, it defaults to '"+GameConfiguration.PROPERTIES_FILE+"'. "+
-                                                                        "The properties file must exist if no configuration property is specified via commandline argument.");
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config settings> is a file containing the game settings; if not specified, it defaults to '"+GameConfiguration.DEFAULT_SETTINGS_FILE+"'. "+
+                                                                        "The settings file must exist if no configuration setting is specified via commandline argument.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
-                needToExit = true;
+                helpOptionsGiven = true;
             }
 
             if (line.hasOption(helpConfig.getLongOpt())) {
-                if (needToExit) {
+                if (helpOptionsGiven) {
                     System.out.println();
                 }
                 GameConfiguration.printTemplate();
-                needToExit = true;
+                helpOptionsGiven = true;
             }
 
-            if (needToExit) {
-                System.exit(0);
+            if (helpOptionsGiven) {
+                exitCode = 0;
+                return true;
             }
 
-            if (line.hasOption(configProperty.getLongOpt())) {
-                configProperties = line.getOptionProperties(configProperty.getLongOpt());
+            /* Parse the real options */
+
+            /* TODO: If we get many real options, it would be useful to implement a more general system like {@link GameConfiguration#SettingBase} */
+
+            if (line.hasOption(configSetting.getLongOpt())) {
+                configSettings = line.getOptionProperties(configSetting.getLongOpt());
             }
 
             if (line.hasOption(printConfig.getLongOpt())) {
@@ -114,26 +124,31 @@ public class CommandLineArguments {
             }
 
             if (line.getArgs().length > 1) {
-                System.err.println("Error: Too many arguments given.");
-                System.exit(1);
+                throw new ParseException("Too many arguments");
             }
 
             if (line.getArgs().length == 1) {
-                propertiesFilename = line.getArgs()[0];
+                settingsFilename = line.getArgs()[0];
             }
 
+            return false;
         } catch (ParseException e) {
-            System.err.println("Parse exception: "+e);
-            System.exit(1);
+            System.err.println("Error: "+e.getMessage());
+            exitCode = 1;
+            return true;
         }
     }
 
-    public String getPropertiesFilename() {
-        return propertiesFilename;
+    public int getExitCode() {
+        return exitCode;
     }
 
-    public Properties getConfigProperties() {
-        return configProperties;
+    public String getSettingsFilename() {
+        return settingsFilename;
+    }
+
+    public Properties getConfigSettings() {
+        return configSettings;
     }
 
     public boolean getPrintConfiguration() {
