@@ -163,7 +163,7 @@ public class CommandLineArguments {
      * Print the included LICENSE file to stdout.
      */
     private void printLicense() {
-        final String filename = "/org/ldmud/jldmud/LICENSE";
+        final String filename = "/LICENSE";
         try (InputStream in = Version.class.getResourceAsStream(filename)) {
             if (in != null) {
                 try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {

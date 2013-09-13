@@ -7,11 +7,14 @@ package org.ldmud.jldmud;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 
 /**
  * Version information about the driver, read from the version.properties resource.
+ * An argument could be made that this class, too, should not use static globals.
  */
 public class Version {
     // The official name of the project.
@@ -24,6 +27,7 @@ public class Version {
 	public static String Major;
 	public static String Minor;
 	public static String Micro;
+	public static String Tag;
 	public static String Copyright;
     public static String License;
 
@@ -46,9 +50,6 @@ public class Version {
                 ReleaseLongType = properties.getProperty("version.release.longtype");
                 ReleaseDate = properties.getProperty("version.release.date");
                 Version = properties.getProperty("version");
-                Major = properties.getProperty("version.major");
-                Minor = properties.getProperty("version.minor");
-                Micro = properties.getProperty("version.micro");
                 Copyright = properties.getProperty("version.copyright");
                 License = properties.getProperty("version.license");
             }
@@ -56,7 +57,25 @@ public class Version {
             System.err.println("Error: Problem loading ".concat(versionProperties).concat(": ").concat(ioe.toString()));
         }
         if (!loaded) {
-            throw new RuntimeException("Unable to load ".concat(versionProperties));
+            throw new IllegalArgumentException("Unable to load ".concat(versionProperties));
+        }
+
+        /* Take apart the full version string. */
+
+        Pattern pattern = Pattern.compile("(?<major>[^.]+)" + "\\.(?<minor>[^.-]+)" + "(?:\\.(?<micro>[^-]+))?" + "(?:\\-(?<tag>.+))?");
+        Matcher matcher = pattern.matcher(Version);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(versionProperties+": Version string '"+Version+"' is malformed - {major}.{minor}[.{micro}][-{tag}] format expected.");
+        }
+        Major = matcher.group("major");
+        Minor = matcher.group("major");
+        Micro = matcher.group("micro");
+        if (Micro == null) {
+            Micro = "";
+        }
+        Tag = matcher.group("tag");
+        if (Tag == null) {
+            Tag = "";
         }
     }
 
