@@ -44,7 +44,7 @@ public class GameConfiguration {
     /*
      * The settings themselves.
      */
-    private final SettingProperty mudDirectory = new SettingProperty("mud.dir", "The root directory of the mud lib, which is also the working directory of the driver process.", true);
+    private final DirectorySetting mudDirectory = new DirectorySetting("mud.dir", "The root directory of the mud lib, which may be specified relative to the driver process' working directory.", true);
 
     /*
      * This list tracks all settings as they are defined.
@@ -193,15 +193,15 @@ public class GameConfiguration {
      * A setting holding an directory, which must exist.
      * The effective value will be the absolute canonical file path.
      */
-    class SettingProperty extends SettingBase<File> {
+    class DirectorySetting extends SettingBase<File> {
 
         File effectiveValue;
 
-        public SettingProperty(String name, String description, File defaultValue) {
+        public DirectorySetting(String name, String description, File defaultValue) {
             super(name, description, defaultValue);
         }
 
-        public SettingProperty(String name, String description,
+        public DirectorySetting(String name, String description,
                 boolean required) {
             super(name, description, required);
         }
@@ -358,7 +358,7 @@ public class GameConfiguration {
      * The configured mud directory may have been specified relative to the initial working
      * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
      * paths relative to the value of {@link GameConfiguration#getMudRoot() getMudRoot()}.
-     * TODO: Needed?
+     * TODO: Is this setting ever used directly?
      *
      * @return The configured mud directory (may be relative to the initial working directory).
      */

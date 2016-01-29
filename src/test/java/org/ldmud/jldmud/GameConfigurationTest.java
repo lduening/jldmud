@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import org.ldmud.jldmud.GameConfiguration.SettingProperty;
+import org.ldmud.jldmud.GameConfiguration.DirectorySetting;
 import org.ldmud.jldmud.GameConfiguration.SettingBase;
 import org.testng.annotations.Test;
 
@@ -25,11 +25,11 @@ public class GameConfigurationTest {
     public void testPropertyRegistration() {
         GameConfiguration config = new GameConfiguration();
         config.allSettings = new ArrayList<>();
-        SettingProperty prop1 = config.new SettingProperty("foo", "bar", true);
+        DirectorySetting prop1 = config.new DirectorySetting("foo", "bar", true);
         assertNotNull(config.allSettings);
         assertEquals(config.allSettings.size(), 1);
 
-        SettingProperty prop2 = config.new SettingProperty("foo2", "bar", true);
+        DirectorySetting prop2 = config.new DirectorySetting("foo2", "bar", true);
         assertEquals(config.allSettings.size(), 2);
 
         assertEquals(config.allSettings.get(0), prop1);
@@ -39,9 +39,9 @@ public class GameConfigurationTest {
     @Test
     public void testPropertyExistenceValidation() {
         GameConfiguration config = new GameConfiguration();
-        SettingBase<?> requiredProp = config.new SettingProperty("mud.dir", "Description", true);
-        SettingBase<?> requiredProp2 = config.new SettingProperty("mud.dir2", "Description", true);
-        SettingBase<?> optionalProp = config.new SettingProperty("mud.opt", "Description", false);
+        SettingBase<?> requiredProp = config.new DirectorySetting("mud.dir", "Description", true);
+        SettingBase<?> requiredProp2 = config.new DirectorySetting("mud.dir2", "Description", true);
+        SettingBase<?> optionalProp = config.new DirectorySetting("mud.opt", "Description", false);
         Properties properties;
         List<String> errors;
 
@@ -88,7 +88,7 @@ public class GameConfigurationTest {
     @Test
     public void testPropertyOverride() {
         GameConfiguration config = new GameConfiguration();
-        SettingProperty requiredProp = config.new SettingProperty("mud.dir", "Description", true);
+        DirectorySetting requiredProp = config.new DirectorySetting("mud.dir", "Description", true);
         Properties properties;
         Properties overrideProperties;
         List<String> errors;
@@ -113,46 +113,46 @@ public class GameConfigurationTest {
     @Test
     public void testDirectoryProperty() {
         GameConfiguration config = new GameConfiguration();
-        SettingProperty prop;
+        DirectorySetting prop;
         String msg;
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = config.new SettingProperty("mud.dir", "Description", true);
+        prop = config.new DirectorySetting("mud.dir", "Description", true);
         assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = config.new SettingProperty("mud.dir", "Description", new File("foo"));
+        prop = config.new DirectorySetting("mud.dir", "Description", new File("foo"));
         assertFalse(prop.required);
         assertNotNull(prop.defaultValue);
         assertEquals(prop.value, prop.defaultValue);
         assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=foo"+System.lineSeparator());
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue(null);
         assertNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("");
         assertNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("doesn't exist");
         assertNotNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("LICENSE"); // Known existing file
         assertNotNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new SettingProperty("mud.dir", "Description", false);
+        prop = config.new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("."); // Current directory
         assertNull(msg);
         assertNotNull(prop.value);

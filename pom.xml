@@ -16,7 +16,7 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.sourceVersion>1.7</project.build.sourceVersion>
+        <project.build.sourceVersion>1.8</project.build.sourceVersion>
     </properties>
 
     <build>
@@ -107,6 +107,11 @@
             <artifactId>testng</artifactId>
             <version>6.1.1</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.9.5</version>
         </dependency>
     </dependencies>
     <description>A Java implementation of the LDMud game driver.</description>

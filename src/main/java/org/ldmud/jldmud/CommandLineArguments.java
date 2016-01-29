@@ -62,7 +62,7 @@ public class CommandLineArguments {
                                                  .withDescription("Set the configuration setting to the given value (overrides any setting in the <config settings> file). Unsupported settings are ignored.")
                                                  .create("C");
             Option help = OptionBuilder.withLongOpt("help").withDescription("Print the help text and exits.").create("h");
-            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings> help text and exits.").create();
+            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings file> help text and exits.").create();
             Option version = OptionBuilder.withLongOpt("version").withDescription("Print the driver version and exits").create("V");
             Option printConfig = OptionBuilder.withLongOpt("print-config").withDescription("Print the effective configuration settings to stdout and exit.").create();
             Option printLicense = OptionBuilder.withLongOpt("license").withDescription("Print the software license and exit.").create();
@@ -109,10 +109,10 @@ public class CommandLineArguments {
                 if (helpOptionsGiven) {
                     System.out.println();
                 }
-                System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config settings>]");
+                System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config settings file>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config settings> is a file containing the game settings; if not specified, it defaults to '"+GameConfiguration.DEFAULT_SETTINGS_FILE+"'. "+
-                                                                        "The settings file must exist if no configuration setting is specified via commandline argument.");
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config settings file> contains the game settings; if not specified, it defaults to '"+GameConfiguration.DEFAULT_SETTINGS_FILE+"'. "+
+                                                                        "The settings file must exist if no configuration setting is specified via commandline arguments.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
                 helpOptionsGiven = true;
@@ -153,7 +153,7 @@ public class CommandLineArguments {
 
             return false;
         } catch (ParseException e) {
-            System.err.println("Error: "+e.getMessage());
+            System.err.println("Error: "+e.toString());
             exitCode = 1;
             return true;
         }
@@ -164,6 +164,7 @@ public class CommandLineArguments {
      */
     private void printLicense() {
         final String filename = "/LICENSE";
+        // TODO: Use Apache IOUtils
         try (InputStream in = Version.class.getResourceAsStream(filename)) {
             if (in != null) {
                 try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
