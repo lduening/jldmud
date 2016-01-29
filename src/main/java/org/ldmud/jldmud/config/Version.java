@@ -2,7 +2,7 @@
  * Copyright (C) 2013 jLDMud developers
  * This file is free software under the MIT license - see the file LICENSE for details.
  */
-package org.ldmud.jldmud;
+package org.ldmud.jldmud.config;
 
 import java.io.IOException;
 import java.io.InputStream;

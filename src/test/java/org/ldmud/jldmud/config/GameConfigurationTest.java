@@ -2,19 +2,19 @@
  * Copyright (C) 2013 jLDMud Developers.
  * This file is free software under the MIT License - see the file LICENSE for details.
  */
-package org.ldmud.jldmud;
+package org.ldmud.jldmud.config;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import org.ldmud.jldmud.GameConfiguration.DirectorySetting;
-import org.ldmud.jldmud.GameConfiguration.SettingBase;
 import org.testng.annotations.Test;
-
-import static org.testng.Assert.*;
 
 /**
  * Unit tests for {@link GameConfiguration}
@@ -22,26 +22,10 @@ import static org.testng.Assert.*;
 public class GameConfigurationTest {
 
     @Test
-    public void testPropertyRegistration() {
-        GameConfiguration config = new GameConfiguration();
-        config.allSettings = new ArrayList<>();
-        DirectorySetting prop1 = config.new DirectorySetting("foo", "bar", true);
-        assertNotNull(config.allSettings);
-        assertEquals(config.allSettings.size(), 1);
-
-        DirectorySetting prop2 = config.new DirectorySetting("foo2", "bar", true);
-        assertEquals(config.allSettings.size(), 2);
-
-        assertEquals(config.allSettings.get(0), prop1);
-        assertEquals(config.allSettings.get(1), prop2);
-    }
-
-    @Test
     public void testPropertyExistenceValidation() {
-        GameConfiguration config = new GameConfiguration();
-        SettingBase<?> requiredProp = config.new DirectorySetting("mud.dir", "Description", true);
-        SettingBase<?> requiredProp2 = config.new DirectorySetting("mud.dir2", "Description", true);
-        SettingBase<?> optionalProp = config.new DirectorySetting("mud.opt", "Description", false);
+        SettingBase<?> requiredProp = new DirectorySetting("mud.dir", "Description", true);
+        SettingBase<?> requiredProp2 = new DirectorySetting("mud.dir2", "Description", true);
+        SettingBase<?> optionalProp = new DirectorySetting("mud.opt", "Description", false);
         Properties properties;
         List<String> errors;
 
@@ -72,7 +56,7 @@ public class GameConfigurationTest {
         assertEquals(errors.size(), 2);
 
         // Check for proper passing of parse errors
-        SettingBase<?> parseProp = config.new SettingBase<Integer>("mud.fail", "description", true) {
+        SettingBase<?> parseProp = new SettingBase<Integer>("mud.fail", "description", true) {
             @Override
             public String parseValueImpl(String v) {
                 return "failure";
@@ -87,8 +71,7 @@ public class GameConfigurationTest {
 
     @Test
     public void testPropertyOverride() {
-        GameConfiguration config = new GameConfiguration();
-        DirectorySetting requiredProp = config.new DirectorySetting("mud.dir", "Description", true);
+        DirectorySetting requiredProp = new DirectorySetting("mud.dir", "Description", true);
         Properties properties;
         Properties overrideProperties;
         List<String> errors;
@@ -112,51 +95,112 @@ public class GameConfigurationTest {
 
     @Test
     public void testDirectoryProperty() {
-        GameConfiguration config = new GameConfiguration();
         DirectorySetting prop;
         String msg;
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = config.new DirectorySetting("mud.dir", "Description", true);
+        prop = new DirectorySetting("mud.dir", "Description", true);
         assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
 
-        prop = config.new DirectorySetting("mud.dir", "Description", new File("foo"));
+        prop = new DirectorySetting("mud.dir", "Description", new File("foo"));
         assertFalse(prop.required);
         assertNotNull(prop.defaultValue);
         assertEquals(prop.value, prop.defaultValue);
+        assertNotNull(prop.effectiveValue);
         assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=foo"+System.lineSeparator());
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue(null);
         assertNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("");
         assertNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("doesn't exist");
         assertNotNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("LICENSE"); // Known existing file
         assertNotNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
 
-        prop = config.new DirectorySetting("mud.dir", "Description", false);
+        prop = new DirectorySetting("mud.dir", "Description", false);
         msg = prop.parseValue("."); // Current directory
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.effectiveValue);
+    }
+
+    @Test
+    public void testGameDirectoryProperty() {
+        GameDirectorySetting prop;
+        String msg;
+
+        DirectorySetting mudDirUnset = new DirectorySetting("mud.dir", "Description", false);
+        DirectorySetting mudDir = new DirectorySetting("mud.dir", "Description", new File("."));
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", true, mudDir);
+        assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", new File("foo"), mudDir);
+        assertFalse(prop.required);
+        assertNotNull(prop.defaultValue);
+        assertEquals(prop.value, prop.defaultValue);
+        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=foo"+System.lineSeparator());
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue(null);
+        assertNull(msg);
+        assertNull(prop.value);
+        assertNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("");
+        assertNull(msg);
+        assertNull(prop.value);
+        assertNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("doesn't exist");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("LICENSE"); // Known existing file when a directory is desired
+        assertNotNull(msg);
+        assertNull(prop.value);
+        assertNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("."); // Current directory
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("${mud.dir}/target");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.effectiveValue);
+        assertFalse(prop.effectiveValue.toString().contains("${mud.dir}"));
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDirUnset);
+        msg = prop.parseValue("${mud.dir}/target");
+        assertNotNull(msg);
+        assertNull(prop.value);
+        assertNull(prop.effectiveValue);
     }
 
     /**

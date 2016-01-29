@@ -4,6 +4,12 @@
  */
 package org.ldmud.jldmud;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ldmud.jldmud.config.CommandLineArguments;
+import org.ldmud.jldmud.config.GameConfiguration;
+import org.ldmud.jldmud.config.Version;
+import org.ldmud.jldmud.log.Logging;
 
 /**
  * The entry point into the Game Driver.<p/>
@@ -11,6 +17,7 @@ package org.ldmud.jldmud;
  * This class initializes the driver and then hands off control to the main game loop.
  */
 public final class Main {
+    private static Logger log;
 
     /**
      * Main method
@@ -41,5 +48,16 @@ public final class Main {
             System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + config.getMudRoot().getAbsolutePath() + "')");
             System.exit(1);
         }
+
+        Logging.config(config);
+        log = LogManager.getLogger(Main.class);
+
+        Logging.mudLog.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " starting up.");
+        log.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " starting up.");
+
+        /* More stuff here */
+
+        Logging.mudLog.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " stopped.");
+        log.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " stopped.");
     }
 }

@@ -2,7 +2,7 @@
  * Copyright (C) 2013 jLDMud Developers.
  * This file is free software under the MIT License - see the file LICENSE for details.
  */
-package org.ldmud.jldmud;
+package org.ldmud.jldmud.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,12 +26,9 @@ import org.apache.commons.lang.WordUtils;
  * the way the settings are defined, to simplify the definition itself,
  * and the generation of help texts.<p/>
  *
- * Due to the global nature of configuration settings, instances of this class
- * (ok, the one instance) are not passed to the modules needing the values. Instead,
- * either the individual values are passed by the Main module explicitly, or
- * the modules can define their own 'configuration settings' classes, which this global
- * class can then generate as needed. That way, the business modules aren't tempted to
- * look at other modules parameters. And all the memory used for this instance can be
+ * Due to the global nature of configuration settings, the instance of this class
+ * is passed to all modules needing configueration. The modules can then pick which values
+ * they need. And all the memory used for this instance can be
  * released once initialization is complete.
  */
 public class GameConfiguration {
@@ -44,190 +41,29 @@ public class GameConfiguration {
     /*
      * The settings themselves.
      */
-    private final DirectorySetting mudDirectory = new DirectorySetting("mud.dir", "The root directory of the mud lib, which may be specified relative to the driver process' working directory.", true);
+    private final DirectorySetting mudDirectory = new DirectorySetting("mud.dir",
+            "The root directory of the mud lib, which may be specified relative to the driver process' working directory.", true);
+    private final GameDirectorySetting driverLogDirectory = new GameDirectorySetting(
+            "mud.dir.driverlog",
+            "The directory in which to keep the driver logs, which may be specified relative to the driver process' working directory. "+
+            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting.",
+            true, mudDirectory);
+    private final GameDirectorySetting mudLogDirectory = new GameDirectorySetting(
+            "mud.dir.gamelog",
+            "The directory in which to keep the game logs, which may be specified relative to the driver process' working directory. "+
+            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting.",
+            true, mudDirectory);
 
     /*
      * This list tracks all settings as they are defined.
      */
-    List<SettingBase<?>> allSettings;
+    List<SettingBase<?>> allSettings = new ArrayList<>();
 
-    /**
-     * Base class describing a setting.<p/>
-     *
-     * The class allows options to create an effective value based
-     * upon the given value - to this end the retrieval of the
-     * final effective value is done through the method {@link #getEffectiveValue()},
-     * which just happens in its default implementation to return the
-     * given values.
-     *
-     * @param <T> The target type of the setting value.
-     */
-    abstract class SettingBase<T> {
-        // The name of the setting, e.g. 'mud.directory'
-        protected String name;
-
-        // The description of the setting, e.g. "The mud directory"
-        // The help printer will prepend '#' and possibly 'Optional: ', and
-        // take care of the wrapping. Embedded line feeds will be preserved.
-        protected String description;
-
-        // Flag whether the setting is required
-        protected boolean required;
-
-        // Flag set to true if this setting was ever explicitly set.
-        protected boolean wasSet = false;
-
-        // The parsed value
-        protected T value;
-
-        // The default value (optional)
-        protected T defaultValue;
-
-        public SettingBase(String name, String description, boolean required) {
-            super();
-            this.name = name;
-            this.description = description;
-            this.required = required;
-
-            registerThis();
-        }
-
-        /**
-         * Register this Setting instance with the allSettings list in the GameConfiguration class instance.
-         * The list is created if necessary.
-         */
-        private void registerThis() {
-            if (allSettings == null) {
-                allSettings = new ArrayList<>();
-            }
-            allSettings.add(this);
-        }
-
-        public SettingBase(String name, String description, T defaultValue) {
-            super();
-            this.name = name;
-            this.description = description;
-            this.required = false;
-            this.defaultValue = defaultValue;
-            this.value = defaultValue;
-
-            registerThis();
-        }
-
-        /**
-         * Create the self-description string suitable for a properties template file.
-         *
-         * @return The multi-line self description string, with a trailing line break.
-         */
-        public String describe() {
-            return wrap("# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
-                   name+"="+(defaultValue != null ? defaultValue : "")+System.lineSeparator());
-        }
-
-        /**
-         * Print the given and effective setting of the setting, inclusive description.
-         *
-         * @return The multi-line string describing the setting setting, with a trailing line break.
-         */
-        public String effective() {
-            StringBuilder sb = new StringBuilder("# ");
-            if (!required) {
-                sb.append("Optional: ");
-            }
-            sb.append(description).append(System.lineSeparator());
-            if (!wasSet) {
-                if (value == null) {
-                    sb.append("# Using default value (unset).").append(System.lineSeparator());
-                } else {
-                    sb.append("# Using default value: ").append(value).append(System.lineSeparator());
-                }
-            } else if (value == null && getEffectiveValue() != null) {
-                sb.append("# Configured value unset.").append(System.lineSeparator());
-            } else if (value != null && !value.equals(getEffectiveValue())) {
-                sb.append("# Configured value: ").append(value).append(System.lineSeparator());
-            }
-
-            if (getEffectiveValue() == null) {
-                sb.append("# ").append(name).append("=");
-            } else {
-                sb.append(name).append("=").append(getEffectiveValue());
-            }
-            sb.append(System.lineSeparator());
-            return wrap(sb.toString());
-        }
-
-        /**
-         * Parse the given string for the desired value, and set the {@link #value} member from it.
-         * The actual work of the parsing is done by {@link #parseValueImpl(String)}, this method
-         * just does some housekeeping.
-         *
-         * @param v The setting value string to parse
-         * @return An error message, or {@code null} if the value could be set.
-         */
-        public String parseValue(String v) {
-            String rc = parseValueImpl(v);
-            if (rc == null) {
-                wasSet = true;
-            }
-            return rc;
-        }
-
-        /**
-         * Parse the given string for the desired value, and set the {@link #value} member from it.
-         * This method is called as part of the {@link #parseValue(String)} processing.
-         *
-         * @param v The property string to parse
-         * @return An error message, or {@code null} if the value could be set.
-         */
-        protected abstract String parseValueImpl(String v);
-
-        /**
-         * @return the effective value of this property.
-         */
-        public T getEffectiveValue() {
-            return value;
-        }
-    }
-
-    /**
-     * A setting holding an directory, which must exist.
-     * The effective value will be the absolute canonical file path.
-     */
-    class DirectorySetting extends SettingBase<File> {
-
-        File effectiveValue;
-
-        public DirectorySetting(String name, String description, File defaultValue) {
-            super(name, description, defaultValue);
-        }
-
-        public DirectorySetting(String name, String description,
-                boolean required) {
-            super(name, description, required);
-        }
-
-        @Override
-        public String parseValueImpl(String v) {
-            if (! StringUtils.isEmpty(v)) {
-                File f = new File(v);
-                if (!f.isDirectory()) {
-                    return "'" + v + "' doesn't exist, or is not a directory.";
-                }
-                value = f;
-                try {
-                    effectiveValue = f.getAbsoluteFile().getCanonicalFile();
-                } catch (IOException e) {
-                    return "'" + v +"' can't be resolved to a canonical path.";
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        public File getEffectiveValue() {
-            return effectiveValue;
-        }
+    public GameConfiguration() {
+        super();
+        allSettings.add(mudDirectory);
+        allSettings.add(driverLogDirectory);
+        allSettings.add(mudLogDirectory);
     }
 
     /**
@@ -371,5 +207,43 @@ public class GameConfiguration {
      */
     public File getMudRoot() {
         return mudDirectory.getEffectiveValue();
+    }
+
+    /**
+     * The configured log directory may have been specified relative to the initial working
+     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
+     * paths relative to the value of {@link GameConfiguration#getDriverLogRoot() getDriverLogRoot()}.
+     * TODO: Is this setting ever used directly?
+     *
+     * @return The configured driver log directory (may be relative to the initial working directory).
+     */
+    public File getDriverLogDirectory() {
+        return driverLogDirectory.value;
+    }
+
+    /**
+     * @return The effective absolute directory holding the driver logs.
+     */
+    public File getDriverLogRoot() {
+        return driverLogDirectory.getEffectiveValue();
+    }
+
+    /**
+     * The configured log directory may have been specified relative to the initial working
+     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
+     * paths relative to the value of {@link GameConfiguration#getDriverLogRoot() getDriverLogRoot()}.
+     * TODO: Is this setting ever used directly?
+     *
+     * @return The configured game log directory (may be relative to the initial working directory).
+     */
+    public File getGameLogDirectory() {
+        return mudLogDirectory.value;
+    }
+
+    /**
+     * @return The effective absolute directory holding the game logs.
+     */
+    public File getGameLogRoot() {
+        return mudLogDirectory.getEffectiveValue();
     }
 }
