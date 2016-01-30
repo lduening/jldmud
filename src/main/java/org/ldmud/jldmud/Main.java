@@ -7,9 +7,13 @@ package org.ldmud.jldmud;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.config.CommandLineArguments;
-import org.ldmud.jldmud.config.GameConfiguration;
+import org.ldmud.jldmud.config.Configuration;
+import org.ldmud.jldmud.config.ConfigurationLoader;
 import org.ldmud.jldmud.config.Version;
 import org.ldmud.jldmud.log.Logging;
+
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
 /**
  * The entry point into the Game Driver.<p/>
@@ -30,22 +34,28 @@ public final class Main {
     	}
 
         System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString());
-        GameConfiguration config = new GameConfiguration();
 
-        if (! config.loadProperties(cliArgs.getSettingsFilename(), cliArgs.getConfigSettings())) {
-            System.exit(1);
-        }
+        Injector injector = Guice.createInjector();
+        Configuration config = injector.getInstance(Configuration.class);
 
-        if (cliArgs.getPrintConfiguration()) {
-            config.printEffectiveSettings();
-            System.exit(0);
+        {
+            ConfigurationLoader configurator = new ConfigurationLoader();
+
+            if (!configurator.loadProperties(cliArgs.getSettingsFilename(), cliArgs.getConfigSettings(), config)) {
+                System.exit(1);
+            }
+
+            if (cliArgs.getPrintConfiguration()) {
+                configurator.printEffectiveSettings();
+                System.exit(0);
+            }
         }
 
         // Java doesn't directly allow to change the current working directory of the process itself;
         // but by changing the 'user.dir' system property the same effect is achieved as the property
         // is used when the Java runtime resolves relative paths.
-        if (null == System.setProperty("user.dir", config.getMudRoot().getAbsolutePath())) {
-            System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + config.getMudRoot().getAbsolutePath() + "')");
+        if (null == System.setProperty("user.dir", config.getMudDirectory().getAbsolutePath())) {
+            System.err.println("Error: Can't set the 'user.dir' system property to the mud directory ('" + config.getMudDirectory().getAbsolutePath() + "')");
             System.exit(1);
         }
 

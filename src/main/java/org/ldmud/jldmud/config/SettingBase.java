@@ -59,7 +59,7 @@ abstract class SettingBase<T> {
      * @return The multi-line self description string, with a trailing line break.
      */
     public String describe() {
-        return GameConfiguration.wrap("# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
+        return ConfigurationLoader.wrap("# "+(required ? "" : "Optional: ")+description+System.lineSeparator()+
                name+"="+(defaultValue != null ? defaultValue : "")+System.lineSeparator());
     }
 
@@ -92,7 +92,7 @@ abstract class SettingBase<T> {
             sb.append(name).append("=").append(getEffectiveValue());
         }
         sb.append(System.lineSeparator());
-        return GameConfiguration.wrap(sb.toString());
+        return ConfigurationLoader.wrap(sb.toString());
     }
 
     /**

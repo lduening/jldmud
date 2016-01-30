@@ -17,9 +17,9 @@ import java.util.Properties;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for {@link GameConfiguration}
+ * Unit tests for {@link ConfigurationLoader}
  */
-public class GameConfigurationTest {
+public class ConfigurationLoaderTest {
 
     @Test
     public void testPropertyExistenceValidation() {
@@ -28,31 +28,32 @@ public class GameConfigurationTest {
         SettingBase<?> optionalProp = new DirectorySetting("mud.opt", "Description", false);
         Properties properties;
         List<String> errors;
+        Configuration config;
 
         // Check for missing properties
         properties = new Properties();
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for required properties with empty values
         properties = new Properties();
         properties.put(requiredProp.name, "");
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(requiredProp));
         assertEquals(errors.size(), 1);
 
         // Check for optional properties
         properties = new Properties();
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         properties = new Properties();
         properties.put(optionalProp.name, "");
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(optionalProp));
         assertEquals(errors.size(), 0);
 
         // Check for multiple missing required properties
         properties = new Properties();
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(requiredProp, requiredProp2));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(requiredProp, requiredProp2));
         assertEquals(errors.size(), 2);
 
         // Check for proper passing of parse errors
@@ -64,7 +65,7 @@ public class GameConfigurationTest {
         };
         properties = new Properties();
         properties.put("mud.fail", "foo");
-        errors = new GameConfiguration().loadProperties(properties, new Properties(), makePropertyList(parseProp));
+        errors = new ConfigurationLoader().loadProperties(properties, new Properties(), makePropertyList(parseProp));
         assertEquals(errors.size(), 1);
         assertEquals(errors.get(0), "Setting 'mud.fail': failure");
     }
@@ -80,7 +81,7 @@ public class GameConfigurationTest {
         properties = new Properties();
         overrideProperties = new Properties();
         overrideProperties.put(requiredProp.name, ".");
-        errors = new GameConfiguration().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        errors = new ConfigurationLoader().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
         assertEquals(errors.size(), 0);
 
         // Check for value override
@@ -88,7 +89,7 @@ public class GameConfigurationTest {
         properties.put(requiredProp.name, "doesn't exist");
         overrideProperties = new Properties();
         overrideProperties.put(requiredProp.name, ".");
-        errors = new GameConfiguration().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
+        errors = new ConfigurationLoader().loadProperties(properties, overrideProperties, makePropertyList(requiredProp));
         assertEquals(errors.size(), 0);
         assertEquals(requiredProp.value.toString(), ".");
     }

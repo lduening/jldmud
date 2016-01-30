@@ -6,7 +6,7 @@ package org.ldmud.jldmud.log;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ldmud.jldmud.config.GameConfiguration;
+import org.ldmud.jldmud.config.Configuration;
 
 /**
  * Main class to configure the logging subsystem, and to provide standard loggers.<p>
@@ -22,9 +22,9 @@ public class Logging {
      *
      * @param configuration The configuration object providing the file paths.
      */
-    public static void config(GameConfiguration configuration) {
-        System.setProperty("mud.logdir.game", configuration.getGameLogRoot().toString());
-        System.setProperty("mud.logdir.driver", configuration.getDriverLogRoot().toString());
+    public static void config(Configuration configuration) {
+        System.setProperty("mud.logdir.game", configuration.getMudLogDirectory().toString());
+        System.setProperty("mud.logdir.driver", configuration.getDriverLogDirectory().toString());
 
         mudLog = LogManager.getLogger("MudLog");
     }

@@ -4,7 +4,6 @@
  */
 package org.ldmud.jldmud.config;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -17,7 +16,11 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 
 /**
- * The Mud's configuration settings.<p/>
+ * The Mud's configuration loader.<p/>
+ *
+ * This class determines the value of the game's properties, and stores them
+ * in a provided instance of {@link Configuration}. The logging subsystem is
+ * not yet available for this class.
  *
  * The properties are primarily read from a configuration file, but the
  * class allows for the manual override from a {@code Properties} instance.<p/>
@@ -26,12 +29,8 @@ import org.apache.commons.lang.WordUtils;
  * the way the settings are defined, to simplify the definition itself,
  * and the generation of help texts.<p/>
  *
- * Due to the global nature of configuration settings, the instance of this class
- * is passed to all modules needing configueration. The modules can then pick which values
- * they need. And all the memory used for this instance can be
- * released once initialization is complete.
  */
-public class GameConfiguration {
+public class ConfigurationLoader {
 
     /**
      * Default configuration filename.
@@ -46,11 +45,12 @@ public class GameConfiguration {
     private final GameDirectorySetting driverLogDirectory = new GameDirectorySetting(
             "mud.dir.driverlog",
             "The directory in which to keep the driver logs, which may be specified relative to the driver process' working directory. "+
-            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting.",
+            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting."+
+            "The driver logs contain internal logs about the driver itself.",
             true, mudDirectory);
     private final GameDirectorySetting mudLogDirectory = new GameDirectorySetting(
             "mud.dir.gamelog",
-            "The directory in which to keep the game logs, which may be specified relative to the driver process' working directory. "+
+            "The directory in which to keep the mud logs, which may be specified relative to the driver process' working directory. "+
             "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting.",
             true, mudDirectory);
 
@@ -59,7 +59,7 @@ public class GameConfiguration {
      */
     List<SettingBase<?>> allSettings = new ArrayList<>();
 
-    public GameConfiguration() {
+    public ConfigurationLoader() {
         super();
         allSettings.add(mudDirectory);
         allSettings.add(driverLogDirectory);
@@ -73,9 +73,10 @@ public class GameConfiguration {
      * @param propertyFileName The name of the settings file in properties format.
      * @param overrideProperties A manually created set of properties, overriding those in the settings file. If this set
      *          is not empty, the {@code propertyFileName} need not exist.
+     * @param config The configuration class to load the data into.
      * @return {@code true} if the file was successfully loaded.
      */
-    public boolean loadProperties(String propertyFileName, Properties overrideProperties) {
+    public boolean loadProperties(String propertyFileName, Properties overrideProperties, Configuration config) {
         Properties properties = new Properties();
         try (InputStream in = new FileInputStream(propertyFileName)) {
             properties.load(in);
@@ -95,6 +96,10 @@ public class GameConfiguration {
             for (String entry : errors) {
                 System.err.println("  " + entry);
             }
+        } else {
+            config.setMudDirectory(mudDirectory.getEffectiveValue());
+            config.setMudLogDirectory(mudLogDirectory.getEffectiveValue());
+            config.setDriverLogDirectory(driverLogDirectory.getEffectiveValue());
         }
 
         return errors.isEmpty();
@@ -166,7 +171,7 @@ public class GameConfiguration {
           "# All settings can also be specified as arguments on the commandline; in that case, any commandline value overrides a corresponding properties file value."
         }));
         System.out.println();
-        for (SettingBase<?> entry : new GameConfiguration().allSettings) {
+        for (SettingBase<?> entry : new ConfigurationLoader().allSettings) {
             System.out.print(entry.describe());
             System.out.println();
         }
@@ -186,64 +191,5 @@ public class GameConfiguration {
             System.out.println();
         }
         System.out.println("# -- END of effective Mud configuration properties --");
-    }
-
-    /* --------------------- Configuration Property Accessors ------------------------------ */
-
-    /**
-     * The configured mud directory may have been specified relative to the initial working
-     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
-     * paths relative to the value of {@link GameConfiguration#getMudRoot() getMudRoot()}.
-     * TODO: Is this setting ever used directly?
-     *
-     * @return The configured mud directory (may be relative to the initial working directory).
-     */
-    public File getMudDirectory() {
-        return mudDirectory.value;
-    }
-
-    /**
-     * @return The effective absolute root directory of the mud.
-     */
-    public File getMudRoot() {
-        return mudDirectory.getEffectiveValue();
-    }
-
-    /**
-     * The configured log directory may have been specified relative to the initial working
-     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
-     * paths relative to the value of {@link GameConfiguration#getDriverLogRoot() getDriverLogRoot()}.
-     * TODO: Is this setting ever used directly?
-     *
-     * @return The configured driver log directory (may be relative to the initial working directory).
-     */
-    public File getDriverLogDirectory() {
-        return driverLogDirectory.value;
-    }
-
-    /**
-     * @return The effective absolute directory holding the driver logs.
-     */
-    public File getDriverLogRoot() {
-        return driverLogDirectory.getEffectiveValue();
-    }
-
-    /**
-     * The configured log directory may have been specified relative to the initial working
-     * directory, so its absolute path may no longer be correct once the startup is complete. Instead, create
-     * paths relative to the value of {@link GameConfiguration#getDriverLogRoot() getDriverLogRoot()}.
-     * TODO: Is this setting ever used directly?
-     *
-     * @return The configured game log directory (may be relative to the initial working directory).
-     */
-    public File getGameLogDirectory() {
-        return mudLogDirectory.value;
-    }
-
-    /**
-     * @return The effective absolute directory holding the game logs.
-     */
-    public File getGameLogRoot() {
-        return mudLogDirectory.getEffectiveValue();
     }
 }

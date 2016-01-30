@@ -31,7 +31,7 @@ public class CommandLineArguments {
     /* -- Parsed command line Arguments -- */
 
     /* Name of the settings file */
-    private String settingsFilename = GameConfiguration.DEFAULT_SETTINGS_FILE;
+    private String settingsFilename = ConfigurationLoader.DEFAULT_SETTINGS_FILE;
 
     /* Manually provided configuration settings */
     private Properties configSettings = new Properties();
@@ -111,7 +111,7 @@ public class CommandLineArguments {
                 }
                 System.out.println("Usage: "+Version.DRIVER_NAME+" [options] [<config settings file>]");
                 System.out.println();
-                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config settings file> contains the game settings; if not specified, it defaults to '"+GameConfiguration.DEFAULT_SETTINGS_FILE+"'. "+
+                formatter.printWrapped(systemOut, formatter.getWidth(), "The <config settings file> contains the game settings; if not specified, it defaults to '"+ConfigurationLoader.DEFAULT_SETTINGS_FILE+"'. "+
                                                                         "The settings file must exist if no configuration setting is specified via commandline arguments.");
                 System.out.println();
                 formatter.printOptions(systemOut, formatter.getWidth(), options, formatter.getLeftPadding(), formatter.getDescPadding());
@@ -122,7 +122,7 @@ public class CommandLineArguments {
                 if (helpOptionsGiven) {
                     System.out.println();
                 }
-                GameConfiguration.printTemplate();
+                ConfigurationLoader.printTemplate();
                 helpOptionsGiven = true;
             }
 
