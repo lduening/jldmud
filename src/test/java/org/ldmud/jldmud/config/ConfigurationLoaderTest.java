@@ -28,7 +28,6 @@ public class ConfigurationLoaderTest {
         SettingBase<?> optionalProp = new DirectorySetting("mud.opt", "Description", false);
         Properties properties;
         List<String> errors;
-        Configuration config;
 
         // Check for missing properties
         properties = new Properties();

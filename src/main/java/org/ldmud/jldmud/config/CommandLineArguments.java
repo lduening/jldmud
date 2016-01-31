@@ -61,9 +61,9 @@ public class CommandLineArguments {
             Option configSetting = OptionBuilder.withLongOpt("config").withArgName("setting=value").hasArgs(2).withValueSeparator()
                                                  .withDescription("Set the configuration setting to the given value (overrides any setting in the <config settings> file). Unsupported settings are ignored.")
                                                  .create("C");
-            Option help = OptionBuilder.withLongOpt("help").withDescription("Print the help text and exits.").create("h");
-            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings file> help text and exits.").create();
-            Option version = OptionBuilder.withLongOpt("version").withDescription("Print the driver version and exits").create("V");
+            Option help = OptionBuilder.withLongOpt("help").withDescription("Print the help text and exit.").create("h");
+            Option helpConfig = OptionBuilder.withLongOpt("help-config").withDescription("Print the <config settings file> help text and exit.").create();
+            Option version = OptionBuilder.withLongOpt("version").withDescription("Print the driver version and exit.").create("V");
             Option printConfig = OptionBuilder.withLongOpt("print-config").withDescription("Print the effective configuration settings to stdout and exit.").create();
             Option printLicense = OptionBuilder.withLongOpt("license").withDescription("Print the software license and exit.").create();
 
