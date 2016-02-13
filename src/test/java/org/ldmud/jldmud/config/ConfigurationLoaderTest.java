@@ -201,6 +201,77 @@ public class ConfigurationLoaderTest {
         assertNotNull(msg);
         assertNull(prop.value);
         assertNull(prop.effectiveValue);
+
+        prop = new GameDirectorySetting("mud.logdir", "Description", false, mudDir);
+        msg = prop.parseValue("${mudder.dir}/target");
+        assertNotNull(msg);
+        assertNull(prop.value);
+        assertNull(prop.effectiveValue);
+    }
+
+    @Test
+    public void testUnsignedNumberProperty() {
+        UnsignedNumberSetting prop;
+        String msg;
+
+        prop = new UnsignedNumberSetting("memory.reserve", "Description", true);
+        assertEquals(prop.describe(), "# "+prop.description+System.lineSeparator()+prop.name+"="+System.lineSeparator());
+
+        prop = new UnsignedNumberSetting("memory.reserve", "Description", 1234L);
+        assertFalse(prop.required);
+        assertNotNull(prop.defaultValue);
+        assertEquals(prop.value, prop.defaultValue);
+        assertEquals(prop.describe(), "# Optional: "+prop.description+System.lineSeparator()+prop.name+"=1234"+System.lineSeparator());
+
+        prop = new UnsignedNumberSetting("memory.reserve", "Description", false);
+
+        msg = prop.parseValue("1234");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234k");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234K");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234m");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234M");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234g");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L * 1024L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234G");
+        assertNull(msg);
+        assertNotNull(prop.value);
+        assertNotNull(prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1024L * 1024L * 1024L), prop.getEffectiveValue());
+
+        msg = prop.parseValue("1234X");
+        assertNotNull(msg);
+
+        msg = prop.parseValue("-1234");
+        assertNotNull(msg);
     }
 
     /**

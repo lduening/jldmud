@@ -10,6 +10,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 import org.ldmud.jldmud.rt.object.MudObject;
+import org.ldmud.jldmud.rt.object.MudObject.Ref;
 import org.testng.annotations.Test;
 
 /**
@@ -21,11 +22,27 @@ public class ObjectRefTest {
     public void testLifeCycle() {
         ObjectRef ref;
 
-        ref = new ObjectRef(null);
+        ref = new ObjectRef((MudObject)null);
+        assertNull(ref.get());
+
+        ref = new ObjectRef((Ref)null);
         assertNull(ref.get());
 
         MudObject obj = mock(MudObject.class);
+        when(obj.ref()).thenReturn(new MudObject.Ref(obj));
         ref = new ObjectRef(obj);
+
+        when(obj.isDestroyed()).thenReturn(false);
+        assertEquals(obj, ref.get());
+
+        when(obj.isDestroyed()).thenReturn(true);
+        assertNull(ref.get());
+        when(obj.isDestroyed()).thenThrow(new IllegalStateException("The obj reference should have been dropped."));
+        assertNull(ref.get());
+
+        obj = mock(MudObject.class);
+        MudObject.Ref objRef = new MudObject.Ref(obj);
+        ref = new ObjectRef(objRef);
 
         when(obj.isDestroyed()).thenReturn(false);
         assertEquals(obj, ref.get());

@@ -40,19 +40,28 @@ public class ConfigurationLoader {
     /*
      * The settings themselves.
      */
-    private final DirectorySetting mudDirectory = new DirectorySetting("mud.dir",
-            "The root directory of the mud lib, which may be specified relative to the driver process' working directory.", true);
+    private final DirectorySetting driverDirectory = new DirectorySetting("mud.dir.driver",
+            "The root directory for driver related files, which may be specified relative to the driver process' working directory.", true);
+    private final GameDirectorySetting mudDirectory = new GameDirectorySetting("mud.dir.lib",
+            "The root directory of the mud lib, which may be specified relative to the driver process' working directory."+
+            "If the path name starts with '${mud.dir.driver}, it is interpreted relative to the mud.dir.driver setting.",
+            true, driverDirectory);
     private final GameDirectorySetting driverLogDirectory = new GameDirectorySetting(
             "mud.dir.driverlog",
             "The directory in which to keep the driver logs, which may be specified relative to the driver process' working directory. "+
-            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting."+
+            "If the path name starts with '${mud.dir.driver}' or '${mud.dir.driver}, it is interpreted relative to the mud.dir.driver or mud.dir.lib setting respectively."+
             "The driver logs contain internal logs about the driver itself.",
-            true, mudDirectory);
+            "${mud.dir.driver}/log", mudDirectory, driverDirectory);
     private final GameDirectorySetting mudLogDirectory = new GameDirectorySetting(
             "mud.dir.gamelog",
             "The directory in which to keep the mud logs, which may be specified relative to the driver process' working directory. "+
-            "If the path name starts with '${mud.dir}', it is interpreted relative to the mud.dir setting.",
-            true, mudDirectory);
+            "If the path name starts with '${mud.dir}' or '${driver.dir}, it is interpreted relative to the mud.dir or driver.dir setting respectively.",
+            "${mud.dir.lib}/log", mudDirectory, driverDirectory);
+    private final UnsignedNumberSetting memoryReserve = new UnsignedNumberSetting(
+            "mud.memoryreserve",
+            "The amount of memory (in Bytes) to reserve at startup as a safeguard for an out-of-memory situation. If set to 0, no memory is being reserved. "+
+            "If the driver runs out of memory, it will use this reserve to allow for a graceful shutdown.",
+            0L);
 
     /*
      * This list tracks all settings as they are defined.
@@ -61,9 +70,11 @@ public class ConfigurationLoader {
 
     public ConfigurationLoader() {
         super();
+        allSettings.add(driverDirectory);
         allSettings.add(mudDirectory);
         allSettings.add(driverLogDirectory);
         allSettings.add(mudLogDirectory);
+        allSettings.add(memoryReserve);
     }
 
     /**
@@ -98,8 +109,10 @@ public class ConfigurationLoader {
             }
         } else {
             config.setMudDirectory(mudDirectory.getEffectiveValue());
+            config.setDriverDirectory(driverDirectory.getEffectiveValue());
             config.setMudLogDirectory(mudLogDirectory.getEffectiveValue());
             config.setDriverLogDirectory(driverLogDirectory.getEffectiveValue());
+            config.setMemoryReserve(memoryReserve.getEffectiveValue());
         }
 
         return errors.isEmpty();

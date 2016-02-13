@@ -13,4 +13,9 @@ public interface Value<T> {
      * @return the base value held.
      */
     public T get();
+
+    /**
+     * @return A shallow value copy of this value.
+     */
+    public Value<T> copy();
 }

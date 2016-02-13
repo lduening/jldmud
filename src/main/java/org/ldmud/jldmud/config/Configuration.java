@@ -14,14 +14,23 @@ import com.google.inject.Singleton;
 @Singleton
 public class Configuration {
     private File mudDirectory;
+    private File driverDirectory;
     private File driverLogDirectory;
     private File mudLogDirectory;
+    private Long memoryReserve;
 
     /**
-     * @return The absolute root directory of the mud.
+     * @return The absolute root directory of the mud library.
      */
     public File getMudDirectory() {
         return mudDirectory;
+    }
+
+    /**
+     * @return The absolute root directory for driver files.
+     */
+    public File getDriverDirectory() {
+        return driverDirectory;
     }
 
     /**
@@ -39,10 +48,31 @@ public class Configuration {
     }
 
     /**
-     * @param mudDirectory The absolute directory of the mud
+     * @return The memory reserve in Bytes.
+     */
+    public Long getMemoryReserve() {
+        return memoryReserve;
+    }
+
+    /**
+     * @param memoryReserve The memory reserve in Bytes.
+     */
+    public void setMemoryReserve(Long memoryReserve) {
+        this.memoryReserve = memoryReserve;
+    }
+
+    /**
+     * @param mudDirectory The absolute directory of the mud library.
      */
     public void setMudDirectory(File mudDirectory) {
         this.mudDirectory = mudDirectory;
+    }
+
+    /**
+     * @param driverDirectory The absolute directory of the driver files.
+     */
+    public void setDriverDirectory(File driverDirectory) {
+        this.driverDirectory = mudDirectory;
     }
 
     /**

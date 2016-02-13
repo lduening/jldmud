@@ -11,41 +11,61 @@ import org.apache.commons.lang.StringUtils;
 
 /**
  * A setting holding an directory, which does not need to exist, and
- * and can also be relative to the mud root directory.
+ * and can also be relative to given root directories.
  * The effective value will be the absolute canonical file path.
  */
-public class GameDirectorySetting extends SettingBase<File> {
+public class GameDirectorySetting extends DirectorySetting {
 
     public final static String MUDROOT_PREFIX = "${mud.dir}";
 
+    String defaultValueString;
     File effectiveValue;
-    DirectorySetting mudDirectory;
+    DirectorySetting rootDirectories[];
 
-    public GameDirectorySetting(String name, String description, File defaultValue, DirectorySetting mudDirectory) {
+    public GameDirectorySetting(String name, String description, File defaultValue, DirectorySetting... rootDirectories) {
         super(name, description, defaultValue);
-        this.mudDirectory = mudDirectory;
+        this.rootDirectories = rootDirectories;
         try {
             effectiveValue = defaultValue.getAbsoluteFile().getCanonicalFile();
         } catch (IOException e) {
-            throw new RuntimeException("Error creating a DirectorySetting instance for default value "+defaultValue, e);
+            throw new RuntimeException("Error creating a GameDirectorySetting instance for '" + name + "' with default value "+defaultValue, e);
         }
     }
 
-    public GameDirectorySetting(String name, String description, boolean required, DirectorySetting mudDirectory) {
+    public GameDirectorySetting(String name, String description, boolean required, DirectorySetting... rootDirectories) {
         super(name, description, required);
-        this.mudDirectory = mudDirectory;
+        this.rootDirectories = rootDirectories;
+    }
+
+    public GameDirectorySetting(String name, String description, String defaultValue, DirectorySetting... rootDirectories) {
+        super(name, description, false);
+        this.rootDirectories = rootDirectories;
+        defaultValueString = defaultValue;
     }
 
     @Override
     public String parseValueImpl(String v) {
         if (!StringUtils.isEmpty(v)) {
-            if (mudDirectory.getEffectiveValue() == null) {
-                return "The mud root directory must be defined first.";
+            File f = null;
+            for (DirectorySetting entry : rootDirectories) {
+                String prefix = "${"+entry.name+"}";
+                if (v.startsWith(prefix)) {
+                    if (entry.effectiveValue == null) {
+                        return "'" + v + "' references uninitialized setting '" + entry.name+"'.";
+                    }
+                    if (v.startsWith(prefix+"/")) {
+                        f = new File(entry.getEffectiveValue(), v.substring(prefix.length()+1));
+                    } else {
+                        f = new File(entry.getEffectiveValue(), v.substring(prefix.length()));
+                    }
+
+                    break;
+                }
             }
-            File f;
-            if (v.startsWith(MUDROOT_PREFIX)) {
-                f = new File(mudDirectory.getEffectiveValue(), v.substring(MUDROOT_PREFIX.length()+1));
-            } else {
+            if (f == null) {
+                if (v.startsWith("${")) {
+                    return "'" + v + "' references an undefined setting.";
+                }
                 f = new File(v);
             }
             if (f.exists() && !f.isDirectory()) {
@@ -64,6 +84,12 @@ public class GameDirectorySetting extends SettingBase<File> {
 
     @Override
     public File getEffectiveValue() {
+        if (effectiveValue == null && defaultValueString != null) {
+            String msg = parseValue(defaultValueString);
+            if (msg != null) {
+                throw new RuntimeException("Error creating GameDirectorySetting default value for '" + name + "': "+msg);
+            }
+        }
         return effectiveValue;
     }
 }

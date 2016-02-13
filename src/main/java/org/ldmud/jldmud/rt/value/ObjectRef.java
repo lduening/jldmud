@@ -4,28 +4,43 @@
  */
 package org.ldmud.jldmud.rt.value;
 
-import java.lang.ref.WeakReference;
-
 import org.ldmud.jldmud.rt.object.MudObject;
 
 /**
  * A reference to a {@link MudObject} to be held by other MudObjects.<p>
- *
- * Since MudObjects can be destroyed while other objects are still holding
- * references, the reference is implement with a weak link, to allow the
- * destroyed MudObject to be garbage-collected.
  */
 public class ObjectRef implements Value<MudObject> {
 
     // The MudObject reference. If {@code null}, a previous call to get() discovered
     // that the object no longer exists, and nulled itself out.
-    private WeakReference<MudObject> objectRef;
+    private MudObject.Ref objectRef;
 
     /**
-     * Object constructor
+     * Constructor
+     *
+     * @param obj The MudObject to hold a reference to.
      */
     public ObjectRef(MudObject obj) {
-        objectRef = new WeakReference<>(obj);
+        if (obj != null) {
+            objectRef = obj.ref();
+        }
+    }
+
+    /**
+     * Constructor
+     *
+     * @param objRef The MudObject.Ref to hold.
+     */
+    public ObjectRef(MudObject.Ref objRef) {
+        objectRef = objRef;
+    }
+
+    /**
+     * Copy Constructor
+     */
+    @Override
+    public ObjectRef copy() {
+        return new ObjectRef(this.objectRef);
     }
 
     /**
@@ -38,9 +53,6 @@ public class ObjectRef implements Value<MudObject> {
             obj = objectRef.get();
             if (obj == null) {
                 objectRef = null;
-            } else if (obj.isDestroyed()) {
-                objectRef = null;
-                obj = null;
             }
         }
 

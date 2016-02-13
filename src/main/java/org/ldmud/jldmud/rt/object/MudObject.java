@@ -4,6 +4,8 @@
  */
 package org.ldmud.jldmud.rt.object;
 
+import java.lang.ref.WeakReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,7 +39,7 @@ public class MudObject {
      * @param id The id of this object
      * @param name The name of this object.
      */
-    MudObject(long id, String name) {
+    public MudObject(long id, String name) {
         super();
         this.id = id;
         this.name = name;
@@ -48,12 +50,18 @@ public class MudObject {
     /**
      * Transform the object to be logically destroyed.
      */
-    void destroy() {
-        this.log.debug("Destroyed object #{} '{}'", this.id, this.name);
+    public void destroy() {
+        log.debug("Destroyed object #{} '{}'", this.id, this.name);
         destroyed = true;
         // TODO: Additional cleanup
     }
 
+    /**
+     * @return A {@link #Ref} to this object.
+     */
+    public MudObject.Ref ref() {
+        return new MudObject.Ref(this);
+    }
 
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
@@ -102,5 +110,43 @@ public class MudObject {
      */
     public boolean isDestroyed() {
         return destroyed;
+    }
+
+    /**
+     * This Reference to a MudObject is the preferred way to keep references around,
+     * as they automatically handle deallocated and destroyed MudObjects.
+     */
+    public static class Ref {
+
+        // The MudObject reference. If {@code null}, a previous call to get() discovered
+        // that the object no longer exists, and nulled itself out.
+        private WeakReference<MudObject> objectRef;
+
+        /**
+         * Object constructor
+         */
+        public Ref(MudObject obj) {
+            if (obj != null) {
+                objectRef = new WeakReference<>(obj);
+            }
+        }
+
+        /**
+         * @return The MudObject referenced, or {@code null} if the object no longer exists.
+         */
+        public MudObject get() {
+            MudObject obj = null;
+            if (objectRef != null) {
+                obj = objectRef.get();
+                if (obj == null) {
+                    objectRef = null;
+                } else if (obj.isDestroyed()) {
+                    objectRef = null;
+                    obj = null;
+                }
+            }
+
+            return obj;
+        }
     }
 }
