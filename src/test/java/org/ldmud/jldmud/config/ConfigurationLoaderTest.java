@@ -235,37 +235,37 @@ public class ConfigurationLoaderTest {
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234K");
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234m");
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234M");
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234g");
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L * 1024L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L * 1000L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234G");
         assertNull(msg);
         assertNotNull(prop.value);
         assertNotNull(prop.getEffectiveValue());
-        assertEquals(Long.valueOf(1234L * 1024L * 1024L * 1024L), prop.getEffectiveValue());
+        assertEquals(Long.valueOf(1234L * 1000L * 1000L * 1000L), prop.getEffectiveValue());
 
         msg = prop.parseValue("1234X");
         assertNotNull(msg);

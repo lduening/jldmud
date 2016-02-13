@@ -12,3 +12,10 @@ Ideas:
   - a user supplied log4j representation has to do that.
   Allow a property for the regular class log file.
   Implement an interface to programmatically modify the log4j settings.
+
+ - Could the object lists be modeled using an ECS like artemis-odb? Problem:
+   LDMud is inherently single-threaded, so command execution and timing are
+   interleaved. LDMud's programming interface is OO - an ECS mud might require
+   a completely different approach. That said, an ECS might simplify the
+   implementation of the backend loop, even if the gamelogic itself is
+   still OO.

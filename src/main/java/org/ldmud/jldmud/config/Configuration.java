@@ -48,7 +48,7 @@ public class Configuration {
     }
 
     /**
-     * @return The memory reserve in Bytes.
+     * @return The memory reserve in MBytes.
      */
     public Long getMemoryReserve() {
         return memoryReserve;

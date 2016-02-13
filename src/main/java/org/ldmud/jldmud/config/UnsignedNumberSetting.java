@@ -8,7 +8,7 @@ import org.apache.commons.lang.StringUtils;
 
 /**
  * Setting holding a number. The postfixes 'K', 'M' and 'G' (and their lower-case version)
- * are recognized.
+ * are recognized as the standard SI multiplicators.
  */
 public class UnsignedNumberSetting extends SettingBase<Long> {
 
@@ -35,15 +35,15 @@ public class UnsignedNumberSetting extends SettingBase<Long> {
                 switch (v.charAt(v.length()-1)) {
                     case 'K':
                     case 'k':
-                        factor = 1024L;
+                        factor = 1000L;
                         break;
                     case 'M':
                     case 'm':
-                        factor = 1024L * 1024L;
+                        factor = 1000L * 1000L;
                         break;
                     case 'G':
                     case 'g':
-                        factor = 1024L * 1024L * 1024L;
+                        factor = 1000L * 1000L * 1000L;
                         break;
                 }
             }

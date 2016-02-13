@@ -66,10 +66,14 @@ public class Objects {
      * @param obj Object to be destroyed.
      */
     public void destroyObject(MudObject obj) {
-        obj.destroy();
-        objectById.remove(obj.getId());
-        objectByName.remove(obj.getName());
-        destroyedObjects.add(obj);
+        synchronized (obj) {
+            if (obj.isDestroyed()) {
+                obj.destroy();
+                objectById.remove(obj.getId());
+                objectByName.remove(obj.getName());
+                destroyedObjects.add(obj);
+            }
+        }
     }
 
     /**

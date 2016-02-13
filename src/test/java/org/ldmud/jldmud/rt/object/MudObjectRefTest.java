@@ -2,7 +2,7 @@
  * Copyright (C) 2016 jLDMud Developers.
  * This file is free software under the MIT License - see the file LICENSE for details.
  */
-package org.ldmud.jldmud.rt.value;
+package org.ldmud.jldmud.rt.object;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -14,23 +14,20 @@ import org.ldmud.jldmud.rt.object.MudObject.Ref;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for {@link ObjectRef}.
+ * Unit tests for {@link MudObject.Ref}.
  */
-public class ObjectRefTest {
+public class MudObjectRefTest {
 
     @Test
     public void testLifeCycle() {
-        ObjectRef ref;
+        Ref ref;
 
-        ref = new ObjectRef((MudObject)null);
-        assertNull(ref.get());
-
-        ref = new ObjectRef((Ref)null);
+        ref = new Ref((MudObject)null);
         assertNull(ref.get());
 
         MudObject obj = mock(MudObject.class);
         when(obj.ref()).thenReturn(new MudObject.Ref(obj));
-        ref = new ObjectRef(obj);
+        ref = new Ref(obj);
 
         when(obj.isDestroyed()).thenReturn(false);
         assertEquals(obj, ref.get());

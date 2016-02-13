@@ -29,7 +29,7 @@ public class MemoryReserve {
     /**
      * The memory buffer. If {@code null}, no memory was configured to be reserved.
      */
-    private SoftReference<char[]> buffer;
+    private SoftReference<byte[]> buffer;
 
     /**
      * Constructor
@@ -47,9 +47,9 @@ public class MemoryReserve {
      */
     public void reserve() {
         if (config.getMemoryReserve() != 0L) {
-            char[] buf = new char[config.getMemoryReserve().intValue()];
+            byte[] buf = new byte[config.getMemoryReserve().intValue() * 1000000];
             buffer = new SoftReference<>(buf);
-            log.info("Reserved {} MB of memory.", config.getMemoryReserve() / 1024L / 1024L);
+            log.info("Reserved {} MB of memory.", config.getMemoryReserve());
         } else {
             log.info("No memory to be reserved.");
         }

@@ -59,7 +59,7 @@ public class ConfigurationLoader {
             "${mud.dir.lib}/log", mudDirectory, driverDirectory);
     private final UnsignedNumberSetting memoryReserve = new UnsignedNumberSetting(
             "mud.memoryreserve",
-            "The amount of memory (in Bytes) to reserve at startup as a safeguard for an out-of-memory situation. If set to 0, no memory is being reserved. "+
+            "The amount of memory (in MBytes) to reserve at startup as a safeguard for an out-of-memory situation. If set to 0, no memory is being reserved. "+
             "If the driver runs out of memory, it will use this reserve to allow for a graceful shutdown.",
             0L);
 
