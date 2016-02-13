@@ -38,7 +38,7 @@ public class GameDirectorySetting extends DirectorySetting {
     }
 
     public GameDirectorySetting(String name, String description, String defaultValue, DirectorySetting... rootDirectories) {
-        super(name, description, false);
+        super(name, description, new File(defaultValue));
         this.rootDirectories = rootDirectories;
         defaultValueString = defaultValue;
     }
@@ -50,7 +50,7 @@ public class GameDirectorySetting extends DirectorySetting {
             for (DirectorySetting entry : rootDirectories) {
                 String prefix = "${"+entry.name+"}";
                 if (v.startsWith(prefix)) {
-                    if (entry.effectiveValue == null) {
+                    if (entry.getEffectiveValue() == null) {
                         return "'" + v + "' references uninitialized setting '" + entry.name+"'.";
                     }
                     if (v.startsWith(prefix+"/")) {
@@ -85,7 +85,7 @@ public class GameDirectorySetting extends DirectorySetting {
     @Override
     public File getEffectiveValue() {
         if (effectiveValue == null && defaultValueString != null) {
-            String msg = parseValue(defaultValueString);
+            String msg = parseValueImpl(defaultValueString);
             if (msg != null) {
                 throw new RuntimeException("Error creating GameDirectorySetting default value for '" + name + "': "+msg);
             }

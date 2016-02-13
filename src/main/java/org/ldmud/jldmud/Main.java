@@ -11,6 +11,7 @@ import org.ldmud.jldmud.config.Configuration;
 import org.ldmud.jldmud.config.ConfigurationLoader;
 import org.ldmud.jldmud.config.Version;
 import org.ldmud.jldmud.log.Logging;
+import org.ldmud.jldmud.rt.GameLoop;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -64,6 +65,9 @@ public final class Main {
 
         Logging.mudLog.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " starting up.");
         log.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " starting up.");
+
+        GameLoop gameLoop = injector.getInstance(GameLoop.class);
+        gameLoop.run();
 
         /* More stuff here */
 

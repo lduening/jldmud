@@ -67,7 +67,7 @@ public class Objects {
      */
     public void destroyObject(MudObject obj) {
         synchronized (obj) {
-            if (obj.isDestroyed()) {
+            if (!obj.isDestroyed()) {
                 obj.destroy();
                 objectById.remove(obj.getId());
                 objectByName.remove(obj.getName());
