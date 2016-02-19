@@ -32,9 +32,14 @@ public class GameLoop {
     // {@code True}: the main thread has been signalled.
     private volatile boolean signalled = false;
 
+    // TODO: Put stateflags like this into a dedicated GameState class?
     // {@code True}: the timer thread signalled the main thread.
     private volatile boolean oneSecondTimerSignal = false;
 
+    // {@code True}: the games is being shut down
+    private volatile boolean gameIsBeingShutdown = false;
+
+    // The thread pinging the game loop once every second.
     private Thread oneSecondTimerThread = null;
 
     /**
@@ -75,7 +80,7 @@ public class GameLoop {
      * @throws InterruptedException
      */
     public void waitForSignal() throws InterruptedException {
-        log.debug("Main thread waiting for signal: current signal: {}", signalled);
+        log.trace("Main thread waiting for signal: current signal: {}", signalled);
         lock.lock();
         try {
             while (!signalled) {
@@ -96,50 +101,60 @@ public class GameLoop {
         oneSecondTimerThread.start();
 
         try {
-            while (true) {
-                waitForSignal();
-                long loopStartTime = System.currentTimeMillis();
+            boolean hadPlayerCommand = true;
+            while (!gameIsBeingShutdown) {
+                if (!hadPlayerCommand) { // TODO: Directly as the comm module if there is a command pending.
+                    log.debug("No command pending - waiting for signal");
+                    waitForSignal();
+                }
+
+                if (gameIsBeingShutdown) {
+                    break;
+                }
 
                 log.debug("Executing loop");
+                long loopStartTime = System.currentTimeMillis();
 
                 if (! memoryReserve.isAvailable() ) {
                     log.warn("Memory reserve has been freed - initiating shutdown");
                     memoryReserve.reset();
-                    // TODO: Initiate graceful shutdown
+                    // TODO: Initiate graceful shutdown, but continue to run
                 }
 
                 // TODO: Cleanup stuff, e.g. replace existing programs
                 // TODO: Check soft malloc limit?
 
-                // Execute the command loop at least once, to make sure that timers are executed.
-                boolean hadPlayerCommand = true;
-                while (hadPlayerCommand) {
-                    hadPlayerCommand = false;
-                    // TODO: Execute player command if pending, setting the flag to true in that case
+                // TODO: Execute player command if pending, setting the
+                // hadPlayerCommand flag to true in that case
+                hadPlayerCommand = false;
 
-                    if (oneSecondTimerSignal) {
-                       log.debug("Executing periodic tasks");
-                       oneSecondTimerSignal = false;
+                if (oneSecondTimerSignal) {
+                    log.debug("Executing periodic tasks");
+                    oneSecondTimerSignal = false;
 
-                       // TODO: Heartbeat
-                       // TODO: Call-out
-                       // TODO: Swap, Reset, Cleanup
+                    // TODO: Heartbeat
+                    // TODO: Call-out
+                    // TODO: Swap, Reset, Cleanup
 
-                       // Remove destroyed objects
-                       // TODO: Move this into a 'Simulation' class or something
-                       for (MudObject obj = objects.getNextDestroyedObject(); obj != null; obj = objects.getNextDestroyedObject()) {
-                           // TODO: Any additional cleanup if required
-                       }
+                    // Remove destroyed objects
+                    // TODO: Move this into a 'Simulation' class or something
+                    for (MudObject obj = objects.getNextDestroyedObject(); obj != null; obj = objects.getNextDestroyedObject()) {
+                        // TODO: Any additional cleanup if required
                     }
                 }
+
                 log.debug("Loop executed in {} ms", System.currentTimeMillis() - loopStartTime);
             }
 
-            // TODO: General shutdown handling here?
 
         } catch (InterruptedException e) {
             log.info("Main loop was interrupted: {}", e.toString());
         }
+
+        log.info("Game is being shut down");
+        // TODO: General shutdown handling here?
+        // Eg. close all pending interactive connections
+
         log.info("Main loop end");
     }
 
