@@ -10,6 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ldmud.jldmud.rt.net.Communicator;
+import org.ldmud.jldmud.rt.net.Interactive;
 import org.ldmud.jldmud.rt.object.MudObject;
 import org.ldmud.jldmud.rt.object.Objects;
 
@@ -24,6 +26,7 @@ public class GameLoop {
     // External modules.
     private MemoryReserve memoryReserve;
     private Objects objects;
+    private Communicator communicator;
 
     // Classes to signal the main thread.
     private Lock lock = new ReentrantLock();
@@ -39,22 +42,26 @@ public class GameLoop {
     // {@code True}: the games is being shut down
     private volatile boolean gameIsBeingShutdown = false;
 
-    // The thread pinging the game loop once every second.
+    // The thread pinging the game loop once every second, and the runnable class.
     private Thread oneSecondTimerThread = null;
+    private OneSecondTimerThread oneSecondTimerThreadInstance = null;
 
     /**
      * Constructor
      *
      * @param memoryReserve The {@link MemoryReserve} instant;
      * @param objects The {@link Objects} management class.
+     * @param communicator The {@link Communicator} network management class.
      */
     @Inject
-    public GameLoop(MemoryReserve memoryReserve, Objects objects) {
+    public GameLoop(MemoryReserve memoryReserve, Objects objects, Communicator communicator) {
         super();
         this.memoryReserve = memoryReserve;
         this.objects = objects;
+        this.communicator = communicator;
 
-        oneSecondTimerThread = new Thread(new OneSecondTimerThread());
+        oneSecondTimerThreadInstance = new OneSecondTimerThread();
+        oneSecondTimerThread = new Thread(oneSecondTimerThreadInstance);
         oneSecondTimerThread.setName("OneSecondTimer");
     }
 
@@ -101,9 +108,8 @@ public class GameLoop {
         oneSecondTimerThread.start();
 
         try {
-            boolean hadPlayerCommand = true;
             while (!gameIsBeingShutdown) {
-                if (!hadPlayerCommand) { // TODO: Directly as the comm module if there is a command pending.
+                if (!communicator.isInteractivesPending()) {
                     log.debug("No command pending - waiting for signal");
                     waitForSignal();
                 }
@@ -124,9 +130,15 @@ public class GameLoop {
                 // TODO: Cleanup stuff, e.g. replace existing programs
                 // TODO: Check soft malloc limit?
 
-                // TODO: Execute player command if pending, setting the
-                // hadPlayerCommand flag to true in that case
-                hadPlayerCommand = false;
+                // Handle the next pending interactive instance.
+                Interactive interactive = communicator.nextPendingInteractive();
+                if (interactive != null) {
+                    if (interactive.getMudObject() == null) {
+                        // TODO: New connection
+                    } else {
+                        // TODO: Execute command
+                    }
+                }
 
                 if (oneSecondTimerSignal) {
                     log.debug("Executing periodic tasks");
@@ -137,9 +149,9 @@ public class GameLoop {
                     // TODO: Swap, Reset, Cleanup
 
                     // Remove destroyed objects
-                    // TODO: Move this into a 'Simulation' class or something
+                    // TODO: Move this into a 'Simulation' class or into 'Objects'
                     for (MudObject obj = objects.getNextDestroyedObject(); obj != null; obj = objects.getNextDestroyedObject()) {
-                        // TODO: Any additional cleanup if required
+                        obj.cleanupDestroyedObject();
                     }
                 }
 
@@ -152,8 +164,9 @@ public class GameLoop {
         }
 
         log.info("Game is being shut down");
+        oneSecondTimerThreadInstance.setStopTimer(true);
         // TODO: General shutdown handling here?
-        // Eg. close all pending interactive connections
+        communicator.shutdown();
 
         log.info("Main loop end");
     }
@@ -162,6 +175,7 @@ public class GameLoop {
      * This thread sends a signal to the main thread every second.
      */
     public class OneSecondTimerThread implements Runnable {
+        private volatile boolean stopTimer = false;
 
         /* (non-Javadoc)
          * @see java.lang.Runnable#run()
@@ -171,7 +185,7 @@ public class GameLoop {
             long lastRun = System.currentTimeMillis();
 
             try {
-                while (true) {
+                while (!stopTimer) {
                     long waitTime = 1000L - (System.currentTimeMillis() - lastRun);
                     Thread.sleep(waitTime);
                     lastRun = System.currentTimeMillis();
@@ -182,6 +196,13 @@ public class GameLoop {
             } catch (InterruptedException e) {
                 Thread.interrupted();
             }
+        }
+
+        /**
+         * @param stopTimer the stopTimer to set
+         */
+        public void setStopTimer(boolean stopTimer) {
+            this.stopTimer = stopTimer;
         }
     }
 }

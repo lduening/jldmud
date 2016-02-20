@@ -5,9 +5,12 @@
 package org.ldmud.jldmud.rt.object;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ldmud.jldmud.rt.net.Interactive;
 
 /**
  * The base of every mud object.
@@ -25,23 +28,31 @@ import org.apache.logging.log4j.Logger;
 public class MudObject {
     private Logger log;
 
-    // Reference to the
+    // Incrementing ID, assigned to new instances.
+    private static AtomicLong currentInteractiveId = new AtomicLong();
+
     // The ID number, uniquely identifying the object.
     private long id;
 
     // The name by which this object can be found.
+    // TODO: LDMud distinguishes load_name and current name, to enable 'virtual' objects
     private String name;
+
+    // The associated network connection
+    private Interactive interactive;
 
     // If {@code true}, the object was logically destructed, but not yet removed from the game.
     private boolean destroyed;
 
+    // If {@code true}, the object was at some point associated with a network connection.
+    private boolean onceInteractive;
+
     /**
-     * @param id The id of this object
      * @param name The name of this object.
      */
-    public MudObject(long id, String name) {
+    public MudObject(String name) {
         super();
-        this.id = id;
+        this.id = currentInteractiveId.incrementAndGet();
         this.name = name;
         this.log = LogManager.getLogger(this.getClass()+"-"+id);
         this.log.debug("Created object #{} '{}'", this.id, this.name);
@@ -54,6 +65,18 @@ public class MudObject {
         log.debug("Destroyed object #{} '{}'", this.id, this.name);
         destroyed = true;
         // TODO: Additional cleanup
+    }
+
+    /**
+     * Called in logically destroyed objects outside of a command execution,
+     * this method releases all remaining resources
+     */
+    public void cleanupDestroyedObject() {
+        Validate.isTrue(destroyed, "cleanupDestroyedObject() called on active object: ", this.name);
+        if (interactive != null) {
+            interactive.remove();
+            interactive = null;
+        }
     }
 
     /**
@@ -106,10 +129,49 @@ public class MudObject {
     }
 
     /**
+     * @return The {@link Interactive} instance for this object's network connection.
+     */
+    public Interactive getInteractive() {
+        return interactive;
+    }
+
+    /**
+     * @param interactive The {@link Interactive} instance for this object's network connection.
+     */
+    public void setInteractive(Interactive interactive) {
+        this.interactive = interactive;
+        if (interactive != null) {
+            onceInteractive = true;
+        }
+    }
+
+    /**
      * @return {@code true} if the object is logically destroyed, but not yet deallocated.
      */
     public boolean isDestroyed() {
         return destroyed;
+    }
+
+    /**
+     * @return {@code true} if the object was or is associated with a network connection.
+     */
+    public boolean isOnceInteractive() {
+        return onceInteractive;
+    }
+
+
+    /**
+     * @return {@code true} if the object currently is associated with a network connection.
+     */
+    public boolean isInteractive() {
+        return onceInteractive;
+    }
+
+    /**
+     * @param onceInteractive the onceInteractive to set
+     */
+    public void setOnceInteractive(boolean onceInteractive) {
+        this.onceInteractive = onceInteractive;
     }
 
     /**

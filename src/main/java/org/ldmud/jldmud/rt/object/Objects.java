@@ -6,9 +6,10 @@ package org.ldmud.jldmud.rt.object;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
+import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +25,7 @@ public class Objects {
     private Logger log = LogManager.getLogger(this.getClass());
 
     /**
-     * ID value to be used for mud object references no longer referencing actual objects.
+     * ID value to be used for by-id mud object references no longer referencing actual objects.
      */
     public static final long INVALID_ID = 0L;
 
@@ -33,10 +34,7 @@ public class Objects {
     private Map<String, MudObject> objectByName = new HashMap<>();
 
     // List of objects logically destroyed, but not yet processed for deletion.
-    private List<MudObject> destroyedObjects = new LinkedList<>();
-
-    // Incrementing ID, assigned to new objects.
-    private long currentObjectId = 0L;
+    private Queue<MudObject> destroyedObjects = new LinkedList<>();
 
     /**
      * Default constructor
@@ -52,8 +50,8 @@ public class Objects {
      * @return The initialized object.
      */
     public MudObject createObject (String name) {
-        currentObjectId++;
-        MudObject obj = new MudObject(currentObjectId, name);
+        Validate.isTrue(!objectByName.containsKey(name), "Desired object name already exists: ", name);
+        MudObject obj = new MudObject(name);
         objectById.put(obj.getId(), obj);
         objectByName.put(obj.getName(), obj);
 
@@ -82,12 +80,7 @@ public class Objects {
      * @return The next object for destruction processing, or {@code null}.
      */
     public MudObject getNextDestroyedObject() {
-        MudObject obj = null;
-        if (destroyedObjects.size() > 0) {
-           obj = destroyedObjects.get(0);
-           destroyedObjects.remove(0);
-        }
-        return obj;
+        return destroyedObjects.poll();
     }
 
     /**
@@ -127,14 +120,7 @@ public class Objects {
     /**
      * @return The list of logically destroyed objects queued for processing.
      */
-    List<MudObject> getDestroyedObjects() {
+    Queue<MudObject> getDestroyedObjects() {
         return destroyedObjects;
-    }
-
-    /**
-     * @return The most recent assigned object id.
-     */
-    public long getCurrentObjectId() {
-        return currentObjectId;
     }
 }

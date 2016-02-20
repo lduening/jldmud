@@ -21,7 +21,6 @@ public class ObjectsTest {
 
         assertNull(objects.find(10L));
         assertNull(objects.find("foo"));
-        assertEquals(Objects.INVALID_ID, objects.getCurrentObjectId());
         assertNull(objects.getNextDestroyedObject());
     }
 
