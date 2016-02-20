@@ -21,7 +21,7 @@ public class ObjectsTest {
 
         assertNull(objects.find(10L));
         assertNull(objects.find("foo"));
-        assertNull(objects.getNextDestroyedObject());
+        assertEquals(0, objects.getDestroyedObjects().size());
     }
 
     @Test
@@ -33,14 +33,14 @@ public class ObjectsTest {
         assertNotEquals(Objects.INVALID_ID, obj.getId());
         assertEquals(obj, objects.find(obj.getId()));
         assertEquals(obj, objects.find(obj.getName()));
-        assertNull(objects.getNextDestroyedObject());
+        assertEquals(0, objects.getDestroyedObjects().size());
 
-        objects.destroyObject(obj);
+        obj.destroy();
         assertNull(objects.find(obj.getId()));
         assertNull(objects.find(obj.getName()));
         assertEquals(1, objects.getDestroyedObjects().size());
 
-        assertEquals(obj, objects.getNextDestroyedObject());
+        objects.removeDestroyedObjects();
         assertEquals(0, objects.getDestroyedObjects().size());
     }
 }

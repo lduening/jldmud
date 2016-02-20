@@ -15,10 +15,24 @@ import org.ldmud.jldmud.rt.net.Interactive;
 /**
  * The base of every mud object.
  *
- * Mud objects are uniquely identified by their numeric id.
+ * Mud objects are uniquely identified by their numeric id.<p>
  *
- * To simulate the destruction of a MudObject, it is first set to be 'logically' destroyed so that
- * in can no longer be accessed, but all actual cleanup work is delayed until the end of the game cycle.
+ * Unlike Java, mud objects can exist even without anything referencing them. Therefore, in order to
+ * get rid of them, they can be 'destroyed'. This is simulated by logically destroying them (setting
+ * a flag) so that all accessing entities can see that the mud object no longer exists. In addition, the
+ * (almost) only hard references to MudObject instances are from the {@link Objects} look-up tables;
+ * all other references are through {@link MudObject.Ref}, which wraps the MudObject into a {@link WeakReference},
+ * and also transparently honors the 'destroyed' flag. This way, a destroyed MudObject can be GCed
+ * once the hard references from {@link Objects} are gone, without having to hunt down all the other
+ * references; the downside is that holders of {@link MudObject.Ref} will have to lazily clean up
+ * their data structures as they discovery the deceased objects.<p>
+ *
+ * A difficulty however is that a MudObject might be destroyed as part of its own program running, and
+ * in that case its variables and program code still needs to be accessible. For this reason, the
+ * destruction process actually involves two steps: in the first, the MudObject is flagged as 'destroyed'
+ * and removed from the lookup tables, but added to a dedicated list of 'newly destructed objects'.
+ * Once the current program execution ends, the MudObject is removed from that list and all its
+ * remaining resources are being released.
  *
  * TODO: If we allow objects to be persisted to disk and temporarily removed
  * from memory, we also need to keep the object's id in the ObjectRef, so that the object
@@ -47,11 +61,16 @@ public class MudObject {
     // If {@code true}, the object was at some point associated with a network connection.
     private boolean onceInteractive;
 
+    // Modules used by this class
+    private Objects objects;
+
     /**
      * @param name The name of this object.
+     * @param objecst The {@link Objects} instance holding this instance.
      */
-    public MudObject(String name) {
+    public MudObject(String name, Objects objects) {
         super();
+        this.objects = objects;
         this.id = currentInteractiveId.incrementAndGet();
         this.name = name;
         this.log = LogManager.getLogger(this.getClass()+"-"+id);
@@ -63,20 +82,23 @@ public class MudObject {
      */
     public void destroy() {
         log.debug("Destroyed object #{} '{}'", this.id, this.name);
-        destroyed = true;
-        // TODO: Additional cleanup
-    }
-
-    /**
-     * Called in logically destroyed objects outside of a command execution,
-     * this method releases all remaining resources
-     */
-    public void cleanupDestroyedObject() {
-        Validate.isTrue(destroyed, "cleanupDestroyedObject() called on active object: ", this.name);
         if (interactive != null) {
             interactive.remove();
             interactive = null;
         }
+        // TODO: Additional cleanup
+        objects.destroyObject(this);
+        destroyed = true;
+    }
+
+    /**
+     * Outside of an execution, fully remove a destroyed object from the system.<p>
+     * This method is called from {@link Objects}, so those links are being taken
+     * care of.
+     */
+    public void remove() {
+        Validate.isTrue(destroyed, "remove() called on a live object");
+        // TODO: Additional cleanup
     }
 
     /**
@@ -172,6 +194,46 @@ public class MudObject {
      */
     public void setOnceInteractive(boolean onceInteractive) {
         this.onceInteractive = onceInteractive;
+    }
+
+    /**
+     * Helper method: Return a reference to a live object.
+     *
+     * @param obj The object reference to evaluate.
+     * @return {@code obj} if it references a live object, or {@code null} otherwise.
+     */
+    public static MudObject getObject(MudObject obj) {
+        return obj != null && !obj.isDestroyed() ? obj : null;
+    }
+
+    /**
+     * Helper method: Return a reference to a live object.
+     *
+     * @param obj The object reference to evaluate.
+     * @return {@code obj.get()} if it references a live object, or {@code null} otherwise.
+     */
+    public static MudObject getObject(MudObject.Ref obj) {
+        return obj != null && obj.get() != null ? obj.get() : null;
+    }
+
+    /**
+     * Helper method: Test if a reference points to a live object.
+     *
+     * @param obj The object reference to evaluate.
+     * @return {@code true} if it references a live object.
+     */
+    public static boolean isAlive(MudObject obj) {
+        return obj != null && !obj.isDestroyed();
+    }
+
+    /**
+     * Helper method: Test if a reference points to a live object.
+     *
+     * @param obj The object reference to evaluate.
+     * @return {@code true} if it references a live object.
+     */
+    public static boolean isAlive(MudObject.Ref obj) {
+        return obj != null && obj.get() != null;
     }
 
     /**

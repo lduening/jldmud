@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.rt.net.Communicator;
 import org.ldmud.jldmud.rt.net.Interactive;
-import org.ldmud.jldmud.rt.object.MudObject;
 import org.ldmud.jldmud.rt.object.Objects;
 
 import com.google.inject.Inject;
@@ -109,7 +108,7 @@ public class GameLoop {
 
         try {
             while (!gameIsBeingShutdown) {
-                if (!communicator.isInteractivesPending()) {
+                if (!communicator.areInteractivesPending()) {
                     log.debug("No command pending - waiting for signal");
                     waitForSignal();
                 }
@@ -140,6 +139,7 @@ public class GameLoop {
                     }
                 }
 
+                // Periodic tasks
                 if (oneSecondTimerSignal) {
                     log.debug("Executing periodic tasks");
                     oneSecondTimerSignal = false;
@@ -147,13 +147,10 @@ public class GameLoop {
                     // TODO: Heartbeat
                     // TODO: Call-out
                     // TODO: Swap, Reset, Cleanup
-
-                    // Remove destroyed objects
-                    // TODO: Move this into a 'Simulation' class or into 'Objects'
-                    for (MudObject obj = objects.getNextDestroyedObject(); obj != null; obj = objects.getNextDestroyedObject()) {
-                        obj.cleanupDestroyedObject();
-                    }
                 }
+
+                // Truly drop all previously destroyed objects.
+                objects.removeDestroyedObjects();
 
                 log.debug("Loop executed in {} ms", System.currentTimeMillis() - loopStartTime);
             }

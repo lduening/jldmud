@@ -14,7 +14,7 @@ import org.ldmud.jldmud.rt.object.MudObject;
  * Instances of the Interactive class provide the connection between
  * and interactive game object, and its telnet connection.
  */
-public class Interactive {
+public class Interactive /* implements Shell */ {
     private final Logger log = LogManager.getLogger(this.getClass());
 
     // Incrementing ID, assigned to new instances.
@@ -23,19 +23,28 @@ public class Interactive {
     // The {@link Communicator} handling this instance.
     private Communicator communicator;
 
-    // The instance id, uniquely identifying the instance.
+    // The instance id, uniquely identifying the instance, used to
+    // provide a hashcode.
     private long id;
 
     // The game object this instance is associated with. If {@code null},
     // the connection had been newly accepted, and this instance needs
     // to be associated with a game object next.
-    private MudObject mudObject;
+    private MudObject.Ref mudObject;
 
-    // For logging: a string identifying the object this instance is associated with.
-    private String objLogName;
+    /**
+     * The state of the interactive.
+     */
+    enum State {
+        NEW,             // A new interactive, not yet associated with a mud object
+        ACTIVE,          // Active interactive
+        CONNECTION_LOST, // Active interactive which lost connection
+        CLOSED           // Inactive interactive which hasn't been purged yet.
+    };
+    private State state;
 
-    // {@code true}: The instance is queued for processing by the communications module.
-    private boolean queuedForProcessing;
+    // A pretty name for this instance
+    private String name;
 
     /**
      * Construct this instance.
@@ -45,8 +54,8 @@ public class Interactive {
     public Interactive(Communicator communicator) {
         super();
         id = currentInteractiveId.incrementAndGet();
-        objLogName = "-";
         this.communicator = communicator;
+        calculateName();
     }
 
     /**
@@ -56,8 +65,7 @@ public class Interactive {
     public void remove() {
         communicator.remove(this);
         mudObject = null;
-        objLogName = "-";
-
+        calculateName();
     }
 
     /* (non-Javadoc)
@@ -88,6 +96,14 @@ public class Interactive {
         return true;
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return name+" [state=" + state + "]";
+    }
+
     /**
      * @return the id of this instance.
      */
@@ -99,39 +115,53 @@ public class Interactive {
      * @return The associated game object.
      */
     public MudObject getMudObject() {
-        return mudObject;
+        return mudObject.get();
     }
 
     /**
      * @param obj The associated game object.
      */
-    public void setMudObject(MudObject obj) {
+    public void setMudObject(MudObject.Ref obj) {
         this.mudObject = obj;
-        if (obj == null) {
-            objLogName = "-";
+        calculateName();
+    }
+
+
+    /**
+     * @return the state of the interactive
+     */
+    public State getState() {
+        return state;
+    }
+
+    /**
+     * @param state The new state of the interactive
+     */
+    public void setState(State state) {
+        this.state = state;
+    }
+
+    /**
+     * Calculate and set the name of this instance.
+     */
+    private void calculateName() {
+        if (MudObject.isAlive(mudObject)) {
+            name = "Interactive #"+id+" ("+mudObject.get().getName()+")";
         } else {
-            objLogName = obj.getName();
+            name = "Interactive #"+id+" (-)";
         }
     }
-
     /**
-     * @return the associated object name used for logging.
+     * @return The name of this instance.
      */
-    public String getObjLogName() {
-        return objLogName;
+    public String getName() {
+        return name;
     }
 
     /**
-     * @return {@code true} if this instance is queued for processing.
+     * @return {@code true} if there is data pending for processing.
      */
-    public boolean isQueuedForProcessing() {
-        return queuedForProcessing;
-    }
-
-    /**
-     * @param queuedForProcessing The new flag value.
-     */
-    public void setQueuedForProcessing(boolean queuedForProcessing) {
-        this.queuedForProcessing = queuedForProcessing;
+    public boolean isDataPending() {
+        return false;
     }
 }

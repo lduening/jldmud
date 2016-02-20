@@ -4,10 +4,9 @@
  */
 package org.ldmud.jldmud.rt.net;
 
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,52 +20,79 @@ import com.google.inject.Singleton;
 public class Communicator {
     private Logger log = LogManager.getLogger(this.getClass());
 
-    // The set of all active {@link Interactive} instances.
-    private Set<Interactive> allInteractives = new HashSet<>();
-
-    // A queue of {@link Interactive} instances with pending events.
-    private Queue<Interactive> pendingInteractives = new LinkedList<>();
+    // All known {@link Interactive} instances, kept in a ring-buffer for fair processing.
+    // TODO: Maybe use two queues (processed and unprocessed), and switch them around double buffer style
+    private Queue<Interactive> allInteractives = new LinkedList<>();
 
     /**
      * Constructor
      */
-    public Communicator() {
+    Communicator() {
         super();
         // TODO Auto-generated constructor stub
     }
 
     /**
-     * @return {@code true} if there is an {@link Interactive} pending for processing.
+     * @return {@code true} if there is an {@link Interactive} with data or events to process.
      */
-    public synchronized boolean isInteractivesPending() {
-        return pendingInteractives.peek() != null;
+    public synchronized boolean areInteractivesPending() {
+        for (Iterator<Interactive> iter = allInteractives.iterator(); iter.hasNext(); ) {
+            Interactive interactive = iter.next();
+            if (isInteractivePending(interactive)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
+     * Find the next {@link Interactive} with data or events pending, while also removing
+     * Interactives in state 'CLOSED'.
+     *
      * @return The next {@link Interactive} pending for processing, of {@code null} if there is none.
      */
     public synchronized Interactive nextPendingInteractive() {
-        Interactive rc = pendingInteractives.poll();
+        Interactive firstNotProcessed = null; // To prevent an endless loop
+        Interactive rc = null;
+        while (rc == null && allInteractives.peek() != null && allInteractives.peek() != firstNotProcessed) {
+            Interactive i = allInteractives.poll();
+            if (i.getState() == Interactive.State.CLOSED) {
+                log.debug("Removing interactive {}", i);
+            } else if (isInteractivePending(i)) {
+                rc = i;
+            } else {
+                allInteractives.add(i);
+                if (firstNotProcessed == null) {
+                    firstNotProcessed = i;
+                }
+            }
+        }
+
         if (rc != null) {
-            log.debug("Next interactive to process: #{} '{}'", rc.getId(), rc.getObjLogName());
-            rc.setQueuedForProcessing(false);
+            log.debug("Next interactive to process: {}", rc);
         } else {
             log.debug("No interactive pending for processing.");
         }
+
         return rc;
     }
 
     /**
-     * Add an {@link Interactive} to the list of those pending for processing.
-     * Repeated calls for the same instance have no effect.
+     * Test if an {@code Interactive} is in need of processing data or events.
      *
-     * @param interactive The {@link Interactive} to queue for processing.
+     * @param interactive The {@code Interactive} to test.
+     * @return {@code true} if the interactive has something to process.
      */
-    public synchronized void addPendingInteractive(Interactive interactive) {
-        if (! interactive.isQueuedForProcessing()) {
-            interactive.setQueuedForProcessing(true);
-            pendingInteractives.add(interactive);
+    boolean isInteractivePending(Interactive interactive) {
+        if (interactive.getState() == Interactive.State.ACTIVE) {
+            return interactive.isDataPending();
         }
+        if (interactive.getState() != Interactive.State.CLOSED) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -82,11 +108,10 @@ public class Communicator {
      * @param interactiveThe {@link Interactive} to remove.
      */
     public synchronized void remove(Interactive interactive) {
-        log.info("Removing interactive #{} '{}'", interactive.getId(), interactive.getObjLogName());
+        log.info("Removing interactive {}", interactive);
         // TODO: Close the connection
-        allInteractives.remove(interactive);
-        pendingInteractives.remove(interactive);
-        interactive.setQueuedForProcessing(false);
+        interactive.setState(Interactive.State.CLOSED);
+        // It will be removed from the allInteractives list on the next round-robin.
     }
 
     /**
@@ -97,8 +122,17 @@ public class Communicator {
         log.info("Shutting down all remaining connections");
         for (Interactive i : allInteractives) {
             // TODO: Close the connection
+            i.setState(Interactive.State.CLOSED);
         }
         allInteractives.clear();
-        pendingInteractives.clear();
     }
+
+    /**
+     * @return The queue of all {@link Interactive} instances.
+     */
+    Queue<Interactive> getAllInteractives() {
+        return allInteractives;
+    }
+
+
 }

@@ -6,8 +6,8 @@ package org.ldmud.jldmud.rt.object;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Singleton;
 
 /**
- * Singleton bean handling all the objects in the game.
+ * Singleton bean to create empty {@link MudObject}, and track them by id and name(s).
  *
  * TOOD: Maybe introduce a static 'Destroyed' object so that we don't use null references?
  */
@@ -33,8 +33,8 @@ public class Objects {
     private Map<Long, MudObject> objectById = new HashMap<>();
     private Map<String, MudObject> objectByName = new HashMap<>();
 
-    // List of objects logically destroyed, but not yet processed for deletion.
-    private Queue<MudObject> destroyedObjects = new LinkedList<>();
+    // List of newly destructed objects which still need to be cleaned up.
+    private List<MudObject> destroyedObjects = new LinkedList<>();
 
     /**
      * Default constructor
@@ -51,7 +51,7 @@ public class Objects {
      */
     public MudObject createObject (String name) {
         Validate.isTrue(!objectByName.containsKey(name), "Desired object name already exists: ", name);
-        MudObject obj = new MudObject(name);
+        MudObject obj = new MudObject(name, this);
         objectById.put(obj.getId(), obj);
         objectByName.put(obj.getName(), obj);
 
@@ -59,28 +59,28 @@ public class Objects {
     }
 
     /**
-     * Destroy an object logically, and schedule it for final processing.
+     * Removed an object from the lookup tables and schedule it for final removal.
      *
-     * @param obj Object to be destroyed.
+     * @param obj Object being destroyed.
      */
-    public void destroyObject(MudObject obj) {
+    void destroyObject(MudObject obj) {
         synchronized (obj) {
             if (!obj.isDestroyed()) {
-                obj.destroy();
+                destroyedObjects.add(obj);
                 objectById.remove(obj.getId());
                 objectByName.remove(obj.getName());
-                destroyedObjects.add(obj);
             }
         }
     }
 
     /**
-     * Return the next object queued for destruction processing, if there is one.
-     *
-     * @return The next object for destruction processing, or {@code null}.
+     * Remove all previously destroyed objects.
      */
-    public MudObject getNextDestroyedObject() {
-        return destroyedObjects.poll();
+    public void removeDestroyedObjects() {
+        for (MudObject obj : destroyedObjects) {
+            obj.remove();
+        }
+        destroyedObjects.clear();
     }
 
     /**
@@ -118,9 +118,9 @@ public class Objects {
     }
 
     /**
-     * @return The list of logically destroyed objects queued for processing.
+     * @return The list of destroyed objects.
      */
-    Queue<MudObject> getDestroyedObjects() {
+    List<MudObject> getDestroyedObjects() {
         return destroyedObjects;
     }
 }
