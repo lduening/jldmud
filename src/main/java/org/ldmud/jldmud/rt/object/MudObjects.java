@@ -21,7 +21,7 @@ import com.google.inject.Singleton;
  * TOOD: Maybe introduce a static 'Destroyed' object so that we don't use null references?
  */
 @Singleton
-public class Objects {
+public class MudObjects {
     private Logger log = LogManager.getLogger(this.getClass());
 
     /**
@@ -39,7 +39,7 @@ public class Objects {
     /**
      * Default constructor
      */
-    Objects() {
+    MudObjects() {
         super();
     }
 

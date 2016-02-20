@@ -20,10 +20,10 @@ import org.ldmud.jldmud.rt.net.Interactive;
  * Unlike Java, mud objects can exist even without anything referencing them. Therefore, in order to
  * get rid of them, they can be 'destroyed'. This is simulated by logically destroying them (setting
  * a flag) so that all accessing entities can see that the mud object no longer exists. In addition, the
- * (almost) only hard references to MudObject instances are from the {@link Objects} look-up tables;
+ * (almost) only hard references to MudObject instances are from the {@link MudObjects} look-up tables;
  * all other references are through {@link MudObject.Ref}, which wraps the MudObject into a {@link WeakReference},
  * and also transparently honors the 'destroyed' flag. This way, a destroyed MudObject can be GCed
- * once the hard references from {@link Objects} are gone, without having to hunt down all the other
+ * once the hard references from {@link MudObjects} are gone, without having to hunt down all the other
  * references; the downside is that holders of {@link MudObject.Ref} will have to lazily clean up
  * their data structures as they discovery the deceased objects.<p>
  *
@@ -62,13 +62,13 @@ public class MudObject {
     private boolean onceInteractive;
 
     // Modules used by this class
-    private Objects objects;
+    private MudObjects objects;
 
     /**
      * @param name The name of this object.
-     * @param objecst The {@link Objects} instance holding this instance.
+     * @param objecst The {@link MudObjects} instance holding this instance.
      */
-    public MudObject(String name, Objects objects) {
+    public MudObject(String name, MudObjects objects) {
         super();
         this.objects = objects;
         this.id = currentInteractiveId.incrementAndGet();
@@ -93,7 +93,7 @@ public class MudObject {
 
     /**
      * Outside of an execution, fully remove a destroyed object from the system.<p>
-     * This method is called from {@link Objects}, so those links are being taken
+     * This method is called from {@link MudObjects}, so those links are being taken
      * care of.
      */
     public void remove() {

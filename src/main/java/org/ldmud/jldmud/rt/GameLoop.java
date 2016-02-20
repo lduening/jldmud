@@ -12,7 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.rt.net.Communicator;
 import org.ldmud.jldmud.rt.net.Interactive;
-import org.ldmud.jldmud.rt.object.Objects;
+import org.ldmud.jldmud.rt.object.MudObjects;
 
 import com.google.inject.Inject;
 
@@ -24,7 +24,7 @@ public class GameLoop {
 
     // External modules.
     private MemoryReserve memoryReserve;
-    private Objects objects;
+    private MudObjects objects;
     private Communicator communicator;
 
     // Classes to signal the main thread.
@@ -49,11 +49,11 @@ public class GameLoop {
      * Constructor
      *
      * @param memoryReserve The {@link MemoryReserve} instant;
-     * @param objects The {@link Objects} management class.
+     * @param objects The {@link MudObjects} management class.
      * @param communicator The {@link Communicator} network management class.
      */
     @Inject
-    public GameLoop(MemoryReserve memoryReserve, Objects objects, Communicator communicator) {
+    public GameLoop(MemoryReserve memoryReserve, MudObjects objects, Communicator communicator) {
         super();
         this.memoryReserve = memoryReserve;
         this.objects = objects;

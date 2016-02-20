@@ -11,13 +11,13 @@ import static org.testng.Assert.assertNull;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for {@link Objects}.
+ * Unit tests for {@link MudObjects}.
  */
-public class ObjectsTest {
+public class MudObjectsTest {
 
     @Test
     public void testEmptyObjects() {
-        Objects objects = new Objects();
+        MudObjects objects = new MudObjects();
 
         assertNull(objects.find(10L));
         assertNull(objects.find("foo"));
@@ -27,10 +27,10 @@ public class ObjectsTest {
     @Test
     public void testObjectLifeCycle() {
         final String NAME = "foo";
-        Objects objects = new Objects();
+        MudObjects objects = new MudObjects();
 
         MudObject obj = objects.createObject(NAME);
-        assertNotEquals(Objects.INVALID_ID, obj.getId());
+        assertNotEquals(MudObjects.INVALID_ID, obj.getId());
         assertEquals(obj, objects.find(obj.getId()));
         assertEquals(obj, objects.find(obj.getName()));
         assertEquals(0, objects.getDestroyedObjects().size());
