@@ -10,7 +10,9 @@ import java.util.Queue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ldmud.jldmud.rt.GameStateSignals;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
@@ -20,6 +22,9 @@ import com.google.inject.Singleton;
 public class Communicator {
     private Logger log = LogManager.getLogger(this.getClass());
 
+    // External Modules
+    private GameStateSignals gameStateSignals;
+
     // All known {@link Interactive} instances, kept in a ring-buffer for fair processing.
     // TODO: Maybe use two queues (processed and unprocessed), and switch them around double buffer style
     private Queue<Interactive> allInteractives = new LinkedList<>();
@@ -27,9 +32,10 @@ public class Communicator {
     /**
      * Constructor
      */
-    Communicator() {
+    @Inject
+    Communicator(GameStateSignals gameStateSignals) {
         super();
-        // TODO Auto-generated constructor stub
+        this.gameStateSignals = gameStateSignals;
     }
 
     /**

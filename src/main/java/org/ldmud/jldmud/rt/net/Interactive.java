@@ -60,10 +60,14 @@ public class Interactive /* implements Shell */ {
 
     /**
      * The game object drops this network connection - close the connection and release
-     * resources.
+     * resources, and disassociate this instance from its owning game object (if any).
      */
     public void remove() {
+        log.debug("Destroyed interactive #{} '{}'", this.id, this.name);
         communicator.remove(this);
+        if (MudObject.getObject(mudObject) != null) {
+            MudObject.getObject(mudObject).setInteractive(null);
+        }
         mudObject = null;
         calculateName();
     }

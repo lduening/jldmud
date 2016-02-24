@@ -4,10 +4,6 @@
  */
 package org.ldmud.jldmud.rt;
 
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.rt.net.Communicator;
@@ -26,20 +22,7 @@ public class GameLoop {
     private MemoryReserve memoryReserve;
     private MudObjects objects;
     private Communicator communicator;
-
-    // Classes to signal the main thread.
-    private Lock lock = new ReentrantLock();
-    private Condition signalCondition = lock.newCondition();
-
-    // {@code True}: the main thread has been signalled.
-    private volatile boolean signalled = false;
-
-    // TODO: Put stateflags like this into a dedicated GameState class?
-    // {@code True}: the timer thread signalled the main thread.
-    private volatile boolean oneSecondTimerSignal = false;
-
-    // {@code True}: the games is being shut down
-    private volatile boolean gameIsBeingShutdown = false;
+    private GameStateSignals gameStateSignals;
 
     // The thread pinging the game loop once every second, and the runnable class.
     private Thread oneSecondTimerThread = null;
@@ -53,49 +36,16 @@ public class GameLoop {
      * @param communicator The {@link Communicator} network management class.
      */
     @Inject
-    public GameLoop(MemoryReserve memoryReserve, MudObjects objects, Communicator communicator) {
+    GameLoop(MemoryReserve memoryReserve, MudObjects objects, Communicator communicator, GameStateSignals gameStateSignals) {
         super();
         this.memoryReserve = memoryReserve;
         this.objects = objects;
         this.communicator = communicator;
+        this.gameStateSignals = gameStateSignals;
 
         oneSecondTimerThreadInstance = new OneSecondTimerThread();
         oneSecondTimerThread = new Thread(oneSecondTimerThreadInstance);
         oneSecondTimerThread.setName("OneSecondTimer");
-    }
-
-    /**
-     * Send a signal to the main thread that something happened
-     * which requires its attention.
-     */
-    public void signalMainThread() {
-        log.debug("Signalling main thread: current signal: {}", signalled);
-        lock.lock();
-        try {
-            signalled = true;
-            signalCondition.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Method for the main thread to be signalled. The 'signalled' flag will be reset
-     * upon return.
-     *
-     * @throws InterruptedException
-     */
-    public void waitForSignal() throws InterruptedException {
-        log.trace("Main thread waiting for signal: current signal: {}", signalled);
-        lock.lock();
-        try {
-            while (!signalled) {
-                signalCondition.await();
-            }
-            signalled = false;
-        } finally {
-            lock.unlock();
-        }
     }
 
     /**
@@ -107,13 +57,13 @@ public class GameLoop {
         oneSecondTimerThread.start();
 
         try {
-            while (!gameIsBeingShutdown) {
+            while (!gameStateSignals.isGameIsBeingShutdown()) {
                 if (!communicator.areInteractivesPending()) {
                     log.debug("No command pending - waiting for signal");
-                    waitForSignal();
+                    gameStateSignals.waitForSignal();
                 }
 
-                if (gameIsBeingShutdown) {
+                if (gameStateSignals.isGameIsBeingShutdown()) {
                     break;
                 }
 
@@ -140,9 +90,9 @@ public class GameLoop {
                 }
 
                 // Periodic tasks
-                if (oneSecondTimerSignal) {
+                if (gameStateSignals.isOneSecondTimerSignal()) {
                     log.debug("Executing periodic tasks");
-                    oneSecondTimerSignal = false;
+                    gameStateSignals.setOneSecondTimerSignal(false);
 
                     // TODO: Heartbeat
                     // TODO: Call-out
@@ -187,8 +137,8 @@ public class GameLoop {
                     Thread.sleep(waitTime);
                     lastRun = System.currentTimeMillis();
                     log.debug("Tick");
-                    oneSecondTimerSignal = true;
-                    signalMainThread();
+                    gameStateSignals.setOneSecondTimerSignal(true);
+                    gameStateSignals.signalMainThread();
                 }
             } catch (InterruptedException e) {
                 Thread.interrupted();

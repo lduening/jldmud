@@ -197,29 +197,52 @@ public class MudObject {
     }
 
     /**
-     * Helper method: Return a reference to a live object.
+     * Helper method: Return a reference to a live game object.
+     * 'Live' means: the object is still allocated, and is not logically destroyed.
      *
-     * @param obj The object reference to evaluate.
+     * @param obj The object reference to evaluate, may be {@code null}.
      * @return {@code obj} if it references a live object, or {@code null} otherwise.
      */
-    public static MudObject getObject(MudObject obj) {
+    public static MudObject get(MudObject obj) {
         return obj != null && !obj.isDestroyed() ? obj : null;
     }
 
     /**
-     * Helper method: Return a reference to a live object.
+     * Helper method: Return a reference to a live game object.
+     * 'Live' means: the object is still allocated, and is not logically destroyed.
      *
-     * @param obj The object reference to evaluate.
-     * @return {@code obj.get()} if it references a live object, or {@code null} otherwise.
+     * @param ref The object reference to evaluate, may be {@code null}.
+     * @return {@code ref.get()} if it references a live object, or {@code null} otherwise.
      */
-    public static MudObject getObject(MudObject.Ref obj) {
-        return obj != null && obj.get() != null ? obj.get() : null;
+    public static MudObject get(MudObject.Ref ref) {
+        return ref != null ? ref.get() : null;
+    }
+
+    /**
+     * Helper method: Return a reference to a game object.<p/>
+     * This method exists mostly as parity to {@link #getObject(MudObject.Ref)}.
+     *
+     * @param obj The object reference to evaluate, may be {@code null}.
+     * @return {@code obj} if it references a game object, or {@code null} otherwise.
+     */
+    public static MudObject getObject(MudObject obj) {
+        return obj;
+    }
+
+    /**
+     * Helper method: Return a reference to a game object.
+     *
+     * @param ref The object reference to evaluate, may be {@code null}.
+     * @return {@code ref.getObject()} if it references a game object, or {@code null} otherwise.
+     */
+    public static MudObject getObject(MudObject.Ref ref) {
+        return ref != null ? ref.getObject() : null;
     }
 
     /**
      * Helper method: Test if a reference points to a live object.
      *
-     * @param obj The object reference to evaluate.
+     * @param obj The object reference to evaluate, may be {@code null}.
      * @return {@code true} if it references a live object.
      */
     public static boolean isAlive(MudObject obj) {
@@ -229,16 +252,30 @@ public class MudObject {
     /**
      * Helper method: Test if a reference points to a live object.
      *
-     * @param obj The object reference to evaluate.
+     * @param ref The object reference to evaluate, may be {@code null}.
      * @return {@code true} if it references a live object.
      */
-    public static boolean isAlive(MudObject.Ref obj) {
-        return obj != null && obj.get() != null;
+    public static boolean isAlive(MudObject.Ref ref) {
+        return ref != null && ref.get() != null;
     }
 
     /**
      * This Reference to a MudObject is the preferred way to keep references around,
-     * as they automatically handle deallocated and destroyed MudObjects.
+     * as they automatically handle deallocated and destroyed MudObjects.<p/>
+     *
+     * Whenever a MudObject reference is retrieved, the Reference checks if the MudObject
+     * is still allocated, and (for some methods) if it is still logically alive (ie.
+     * not destroyed). If the conditions are not met, the internal datastructures are
+     * erased. This can have the following effect: <pre>
+     *     MudObject.Ref ref = new MudObject.Ref(obj);
+     *
+     *     ref.get()       --> returns obj
+     *     ref.getObject() --> returns obj
+     *     obj.destroy()
+     *     ref.getObject() --> returns obj (if it's still allocated)
+     *     ref.get()       --> returns null even if still allcoated
+     *     ref.getObject() --> returns null even if still allocated, because get() cleared out the reference
+     * </pre>
      */
     public static class Ref {
 
@@ -256,17 +293,35 @@ public class MudObject {
         }
 
         /**
-         * @return The MudObject referenced, or {@code null} if the object no longer exists.
+         * Get the MudObject referenced, if it is still allocated and not logically destroyed.
+         * If there is no such reference, the internal datastructures are nulled out.
+         *
+         * @return The MudObject referenced, or {@code null} if the object no longer exists
+         *   (ie. was deallocated or at least logically destroyed).
          */
         public MudObject get() {
+            MudObject obj = getObject();
+            if (obj != null && obj.isDestroyed()) {
+                objectRef = null;
+                obj = null;
+            }
+
+            return obj;
+        }
+
+        /**
+         * Get the MudObject referenced, if it is still allocated.
+         * If there is no such reference, the internal datastructures are nulled out.
+
+         * @return The MudObject referenced, or {@code null} if the object was deallocated.
+         *   The object may be logically destroyed.
+         */
+        public MudObject getObject() {
             MudObject obj = null;
             if (objectRef != null) {
                 obj = objectRef.get();
                 if (obj == null) {
                     objectRef = null;
-                } else if (obj.isDestroyed()) {
-                    objectRef = null;
-                    obj = null;
                 }
             }
 

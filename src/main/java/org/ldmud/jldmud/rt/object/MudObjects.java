@@ -13,6 +13,7 @@ import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
@@ -39,6 +40,7 @@ public class MudObjects {
     /**
      * Default constructor
      */
+    @Inject
     MudObjects() {
         super();
     }
@@ -63,7 +65,7 @@ public class MudObjects {
      *
      * @param obj Object being destroyed.
      */
-    void destroyObject(MudObject obj) {
+    public void destroyObject(MudObject obj) {
         synchronized (obj) {
             if (!obj.isDestroyed()) {
                 destroyedObjects.add(obj);

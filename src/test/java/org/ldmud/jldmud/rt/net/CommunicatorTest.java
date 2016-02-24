@@ -21,7 +21,7 @@ public class CommunicatorTest {
 
     @Test
     public void testInteractiveClassification() {
-        Communicator communicator = new Communicator();
+        Communicator communicator = new Communicator(null);
 
         Interactive interactive = mock(Interactive.class);
 
@@ -45,7 +45,7 @@ public class CommunicatorTest {
 
     @Test
     public void testInteractiveLifecycle() {
-        Communicator communicator = new Communicator();
+        Communicator communicator = new Communicator(null);
 
         MudObject obj = mock(MudObject.class);
         when(obj.ref()).thenReturn(new MudObject.Ref(obj));
