@@ -52,7 +52,7 @@ public class CommandLineArguments {
     /**
      * Parse the commandline and set the associated globals.
      *
-     * @return {@code true} if the main program should exit; in that case {@link @getExitCode()} provides the suggest exit code.
+     * @return {@code true} if the main program should exit; in that case {@link #getExitCode} provides the suggest exit code.
      */
     @SuppressWarnings("static-access")
     public boolean parseCommandline(String [] args) {

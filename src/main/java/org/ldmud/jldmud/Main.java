@@ -69,7 +69,7 @@ public final class Main {
         GameLoop gameLoop = injector.getInstance(GameLoop.class);
         gameLoop.run();
 
-        /* More stuff here */
+        /* TODO: More stuff here? */
 
         Logging.mudLog.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " stopped.");
         log.info(Version.DRIVER_NAME + " " + Version.getVersionString() + " stopped.");

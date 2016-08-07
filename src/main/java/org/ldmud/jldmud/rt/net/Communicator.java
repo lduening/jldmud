@@ -67,6 +67,7 @@ public class Communicator {
                 log.debug("Removing interactive {}", i);
             } else if (isInteractivePending(i)) {
                 rc = i;
+                allInteractives.add(i);
             } else {
                 allInteractives.add(i);
                 if (firstNotProcessed == null) {

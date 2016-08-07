@@ -4,6 +4,8 @@ Java Bytecode Libraries:
 
 http://code.google.com/p/telnetd-x/
 
+Use Dagger-2 instead of Guice?
+
 Ideas:
   In properties, note that depending on the property, empty values may fall back
   to the default value, or not.

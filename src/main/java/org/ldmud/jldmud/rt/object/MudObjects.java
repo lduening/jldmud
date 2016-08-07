@@ -17,7 +17,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Singleton bean to create empty {@link MudObject}, and track them by id and name(s).
+ * Singleton class to create empty {@link MudObject}, and track them by id and name(s).
  *
  * TOOD: Maybe introduce a static 'Destroyed' object so that we don't use null references?
  */

@@ -31,7 +31,7 @@ public class GameLoop {
     /**
      * Constructor
      *
-     * @param memoryReserve The {@link MemoryReserve} instant;
+     * @param memoryReserve The {@link MemoryReserve} instance.
      * @param objects The {@link MudObjects} management class.
      * @param communicator The {@link Communicator} network management class.
      */
@@ -108,6 +108,7 @@ public class GameLoop {
 
         } catch (InterruptedException e) {
             log.info("Main loop was interrupted: {}", e.toString());
+            Thread.interrupted();
         }
 
         log.info("Game is being shut down");
@@ -121,7 +122,7 @@ public class GameLoop {
     /**
      * This thread sends a signal to the main thread every second.
      */
-    public class OneSecondTimerThread implements Runnable {
+    private class OneSecondTimerThread implements Runnable {
         private volatile boolean stopTimer = false;
 
         /* (non-Javadoc)
@@ -134,7 +135,9 @@ public class GameLoop {
             try {
                 while (!stopTimer) {
                     long waitTime = 1000L - (System.currentTimeMillis() - lastRun);
-                    Thread.sleep(waitTime);
+                    if (waitTime > 0) {
+                        Thread.sleep(waitTime);
+                    }
                     lastRun = System.currentTimeMillis();
                     log.debug("Tick");
                     gameStateSignals.setOneSecondTimerSignal(true);

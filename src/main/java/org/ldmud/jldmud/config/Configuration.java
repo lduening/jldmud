@@ -55,7 +55,7 @@ public class Configuration {
     }
 
     /**
-     * @param memoryReserve The memory reserve in Bytes.
+     * @param memoryReserve The memory reserve in MBytes.
      */
     public void setMemoryReserve(Long memoryReserve) {
         this.memoryReserve = memoryReserve;

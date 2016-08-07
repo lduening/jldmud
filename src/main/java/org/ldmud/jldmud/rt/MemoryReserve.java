@@ -15,7 +15,7 @@ import com.google.inject.Singleton;
 
 /**
  * This class allocates a memory buffer of configurable size and holds a soft reference to it.
- * If this reference is cleared by the GC, the Mud is running out of memory and shut perform
+ * If this reference is cleared by the GC, the Mud is running out of memory and should perform
  * a graceful shutdown.<p/>
  *
  * The size of the buffer is configurable; a size of '0' means that no buffer is being allocated.

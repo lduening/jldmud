@@ -15,26 +15,26 @@ import org.ldmud.jldmud.rt.net.Interactive;
 /**
  * The base of every mud object.
  *
- * Mud objects are uniquely identified by their numeric id.<p>
+ * <p>Mud objects are uniquely identified by their numeric id.<p>
  *
- * Unlike Java, mud objects can exist even without anything referencing them. Therefore, in order to
+ * <p>Unlike Java, mud objects can exist even without anything referencing them. Therefore, in order to
  * get rid of them, they can be 'destroyed'. This is simulated by logically destroying them (setting
  * a flag) so that all accessing entities can see that the mud object no longer exists. In addition, the
- * (almost) only hard references to MudObject instances are from the {@link MudObjects} look-up tables;
+ * few hard references to MudObject instances are from the {@link MudObjects} look-up tables;
  * all other references are through {@link MudObject.Ref}, which wraps the MudObject into a {@link WeakReference},
  * and also transparently honors the 'destroyed' flag. This way, a destroyed MudObject can be GCed
  * once the hard references from {@link MudObjects} are gone, without having to hunt down all the other
  * references; the downside is that holders of {@link MudObject.Ref} will have to lazily clean up
  * their data structures as they discovery the deceased objects.<p>
  *
- * A difficulty however is that a MudObject might be destroyed as part of its own program running, and
- * in that case its variables and program code still needs to be accessible. For this reason, the
+ * <p>A difficulty however is that a MudObject might be destroyed as part of its own program running, and
+ * in that case its variables and program code still need to be accessible. For this reason, the
  * destruction process actually involves two steps: in the first, the MudObject is flagged as 'destroyed'
  * and removed from the lookup tables, but added to a dedicated list of 'newly destructed objects'.
  * Once the current program execution ends, the MudObject is removed from that list and all its
  * remaining resources are being released.
  *
- * TODO: If we allow objects to be persisted to disk and temporarily removed
+ * <p>TODO: If we allow objects to be persisted to disk and temporarily removed
  * from memory, we also need to keep the object's id in the ObjectRef, so that the object
  * can be loaded again. Alternatively, this little base object always remains in memory, and the payload
  * is held in separate Java objects (which would give us better modularization).
@@ -52,7 +52,7 @@ public class MudObject {
     // TODO: LDMud distinguishes load_name and current name, to enable 'virtual' objects
     private String name;
 
-    // The associated network connection
+    // The associated network connection, may be null.
     private Interactive interactive;
 
     // If {@code true}, the object was logically destructed, but not yet removed from the game.
@@ -66,7 +66,7 @@ public class MudObject {
 
     /**
      * @param name The name of this object.
-     * @param objecst The {@link MudObjects} instance holding this instance.
+     * @param objects The {@link MudObjects} instance holding this instance.
      */
     public MudObject(String name, MudObjects objects) {
         super();
@@ -92,8 +92,9 @@ public class MudObject {
     }
 
     /**
-     * Outside of an execution, fully remove a destroyed object from the system.<p>
-     * This method is called from {@link MudObjects}, so those links are being taken
+     * Outside of an execution, fully remove a destroyed object from the system.
+     *
+     * <p>This method is called from {@link MudObjects}, so those links are being taken
      * care of.
      */
     public void remove() {
@@ -186,11 +187,11 @@ public class MudObject {
      * @return {@code true} if the object currently is associated with a network connection.
      */
     public boolean isInteractive() {
-        return onceInteractive;
+        return interactive != null;
     }
 
     /**
-     * @param onceInteractive the onceInteractive to set
+     * @param onceInteractive The onceInteractive to set
      */
     public void setOnceInteractive(boolean onceInteractive) {
         this.onceInteractive = onceInteractive;
@@ -263,7 +264,7 @@ public class MudObject {
      * This Reference to a MudObject is the preferred way to keep references around,
      * as they automatically handle deallocated and destroyed MudObjects.<p/>
      *
-     * Whenever a MudObject reference is retrieved, the Reference checks if the MudObject
+     * <p>Whenever a MudObject reference is retrieved, the Reference checks if the MudObject
      * is still allocated, and (for some methods) if it is still logically alive (ie.
      * not destroyed). If the conditions are not met, the internal datastructures are
      * erased. This can have the following effect: <pre>
@@ -273,9 +274,12 @@ public class MudObject {
      *     ref.getObject() --> returns obj
      *     obj.destroy()
      *     ref.getObject() --> returns obj (if it's still allocated)
-     *     ref.get()       --> returns null even if still allcoated
+     *     ref.get()       --> returns null even if still allocated
      *     ref.getObject() --> returns null even if still allocated, because get() cleared out the reference
      * </pre>
+     *
+     * <p>TODO: The WeakReference may be overkill if this structure is used only during
+     * active computations, and an id-only structure is used to store object references on other entities.
      */
     public static class Ref {
 

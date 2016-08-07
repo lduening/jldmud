@@ -28,12 +28,12 @@ public class GameStateSignals {
     private Condition signalCondition = lock.newCondition();
 
     /**
-     * {@code True}: the main thread has been signalled.
+     * {@code True}: the main thread has been signaled by something.
      */
-    private volatile boolean signalled = false;
+    private volatile boolean signaled = false;
 
     /**
-     * {@code True}: the timer thread signalled the main thread.
+     * {@code True}: the timer thread raised the 1-second signal.
      */
     private volatile boolean oneSecondTimerSignal = false;
 
@@ -55,10 +55,10 @@ public class GameStateSignals {
      * which requires its attention.
      */
     public void signalMainThread() {
-        log.debug("Signalling main thread: current signal: {}", signalled);
+        log.debug("Signalling main thread: current signal: {}", signaled);
         lock.lock();
         try {
-            signalled = true;
+            signaled = true;
             signalCondition.signal();
         } finally {
             lock.unlock();
@@ -66,19 +66,19 @@ public class GameStateSignals {
     }
 
     /**
-     * Method for the main thread to wait for a signal. The 'signalled' flag will be reset
+     * Method for the main thread to wait for a signal. The 'signaled' flag will be reset
      * upon return.
      *
      * @throws InterruptedException
      */
     public void waitForSignal() throws InterruptedException {
-        log.trace("Main thread waiting for signal: current signal: {}", signalled);
+        log.trace("Main thread waiting for signal: current signal: {}", signaled);
         lock.lock();
         try {
-            while (!signalled) {
+            while (!signaled) {
                 signalCondition.await();
             }
-            signalled = false;
+            signaled = false;
         } finally {
             lock.unlock();
         }
