@@ -14,14 +14,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Singleton class to create empty {@link MudObject}, and track them by id and name(s).
  *
  * TOOD: Maybe introduce a static 'Destroyed' object so that we don't use null references?
  */
-@Singleton
 public class MudObjects {
     private Logger log = LogManager.getLogger(this.getClass());
 

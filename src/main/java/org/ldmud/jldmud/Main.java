@@ -36,7 +36,7 @@ public final class Main {
 
         System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString());
 
-        Injector injector = Guice.createInjector();
+        Injector injector = Guice.createInjector(new MainModule());
         Configuration config = injector.getInstance(Configuration.class);
 
         {

@@ -12,14 +12,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * This class holds various signal flags of global interest,
  * as well as the methods necessary to signal the main game loop
  * that something interesting has happened.
  */
-@Singleton
 public class GameStateSignals {
     private Logger log = LogManager.getLogger(this.getClass());
 

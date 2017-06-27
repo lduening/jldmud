@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.config.Configuration;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * This class allocates a memory buffer of configurable size and holds a soft reference to it.
@@ -20,7 +19,6 @@ import com.google.inject.Singleton;
  *
  * The size of the buffer is configurable; a size of '0' means that no buffer is being allocated.
  */
-@Singleton
 public class MemoryReserve {
     private Logger log = LogManager.getLogger(this.getClass());
 

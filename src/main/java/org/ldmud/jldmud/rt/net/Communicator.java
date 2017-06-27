@@ -13,12 +13,10 @@ import org.apache.logging.log4j.Logger;
 import org.ldmud.jldmud.rt.GameStateSignals;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * This class handles the telnet network I/O, and manages the {@code Interactive} instances.
  */
-@Singleton
 public class Communicator {
     private Logger log = LogManager.getLogger(this.getClass());
 

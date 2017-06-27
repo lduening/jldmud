@@ -280,6 +280,7 @@ public class MudObject {
      *
      * <p>TODO: The WeakReference may be overkill if this structure is used only during
      * active computations, and an id-only structure is used to store object references on other entities.
+     * TODO: Maybe extend Optional<MudObject> and add smarts to the standard methods.
      */
     public static class Ref {
 
