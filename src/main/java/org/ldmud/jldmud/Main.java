@@ -34,11 +34,12 @@ public final class Main {
     	    System.exit(cliArgs.getExitCode());
     	}
 
-        System.out.println(Version.DRIVER_NAME+" "+Version.getVersionString());
+        System.out.println(Version.DRIVER_NAME + " " + Version.getVersionString());
 
         Injector injector = Guice.createInjector(new MainModule());
         Configuration config = injector.getInstance(Configuration.class);
 
+        // Read the driver's configuration, then jettison the utility classes by GC.
         {
             ConfigurationLoader configurator = new ConfigurationLoader();
 

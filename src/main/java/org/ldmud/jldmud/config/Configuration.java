@@ -6,12 +6,9 @@ package org.ldmud.jldmud.config;
 
 import java.io.File;
 
-import com.google.inject.Singleton;
-
 /**
  * Class holding various configuration parameters.
  */
-@Singleton
 public class Configuration {
     private File mudDirectory;
     private File driverDirectory;
